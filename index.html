@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ES麻将役种查询助手</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 引入数据文件 -->
+  <script src="data.js"></script>
+  <!-- PWA相关标签 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#4a5568">
+<meta name="description" content="偶像梦幻祭麻将胡牌助手">
+<meta name="author" content="Aruai">
+<meta name="publisher" content="Aruai">
+
+<!-- iOS支持 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ES麻将胡牌助手">
+<link rel="apple-touch-icon" href="./es_mahjong_url.png">
+<link rel="apple-touch-icon" href="./es_mahjong_url.png" sizes="180x180">
+
+<!-- 引入manifest -->
+<link rel="manifest" href="./manifest.json">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#7e22ce', // 紫色
+            secondary: '#3b82f6', // 蓝色
+            success: '#16a34a', // 绿色
+            danger: '#dc2626', // 红色
+            neutral: '#64748b', // 灰色
+            dark: '#1e293b',
+            light: '#f8fafc'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-up': 'slideUp 0.5s ease-in-out',
+            'pulse-success': 'pulseSuccess 2s infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            pulseSuccess: {
+              '0%, 100%': { backgroundColor: '#16a34a' },
+              '50%': { backgroundColor: '#22c55e' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+      .member-tag {
+        @apply px-2 py-1 rounded-full text-xs mr-1 mb-1;
+      }
+      .member-tag-completed {
+        @apply bg-success/20 text-success;
+      }
+      .member-tag-pending {
+        @apply bg-neutral/20 text-neutral;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-5xl">
+    <!-- 标题区域 -->
+    <header class="mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <!-- 游戏规则按钮 -->
+        <button id="rule-btn" class="bg-secondary hover:bg-secondary/90 text-white font-medium px-4 py-2 rounded-lg transition-all flex items-center">
+          <i class="fa fa-info-circle mr-2"></i> 游戏规则
+        </button>
+        <!-- 占位元素保持标题居中 -->
+        <div class="w-[140px]"></div>
+      </div>
+      <div class="text-center">
+        <div class="flex items-center justify-center mb-2">
+          <img src="./es_mahjong_yz.png" alt="ES麻将助手" class="h-12 w-12 mr-3">
+          <h1 class="text-4xl font-bold text-gray-800">ES麻将役种查询助手</h1>
+        </div>
+        <p class="text-gray-600">帮助你快速查询和筛选角色之间的组合关系，优化手牌策略</p>
+         <p class="text-gray-600">使用方法：在搜索框内输入成员名称关键词-点击名称将其添加到手牌池（至少加入 1 人）-点击查询按钮</p>
+         <p class="text-gray-600">手牌更新时再次点击查询，即可获得新的手牌推荐</p>
+        <p class="text-sm text-primary mt-2">胡牌条件：每个役种需凑够其中的三张牌且要凑齐三个役种，役种间人员无重叠</p>
+      </div>
+    </header>
+
+    <!-- 输入区域 -->
+    <section class="bg-white rounded-xl shadow-md p-6 mb-8">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">选择成员</h2>
+      <div class="relative">
+        <div class="flex items-end">
+          <div class="relative flex-1">
+            <input type="text" id="member-input" placeholder="输入成员名称..." class="w-full px-4 py-2 pr-10 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+            <button id="add-member-btn" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80">
+              <i class="fa fa-plus-circle"></i>
+            </button>
+            <div id="suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto scrollbar-hide hidden"></div>
+          </div>
+          <button id="search-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center justify-center ml-2">
+            <i class="fa fa-search mr-2"></i> 查询
+          </button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-1">请确保输入的角色名称与数据库中的格式一致，例如"天城燐音"而非"天城磷音"<br>注意，输入事务所牌英文时需要使用大写</p>
+    </section>
+
+    <!-- 已选成员标签 -->
+    <div class="mb-2">
+      <h3 class="text-lg font-medium text-gray-700">当前手牌池</h3>
+    </div>
+    <div id="selected-members" class="mb-4 flex flex-wrap gap-2 min-h-[40px] border border-dashed border-gray-300 rounded-lg p-2"></div>
+    <div class="text-right mb-2">
+      <span id="selected-count" class="text-sm text-gray-500">已选人数: 0</span>
+    </div>
+    
+    <!-- 清除按钮 -->
+    <div class="mb-8 text-right">
+      <button id="clear-btn" class="text-gray-500 hover:text-gray-700 text-sm flex items-center">
+        <i class="fa fa-times-circle mr-1"></i> 清除所有
+      </button>
+    </div>
+
+    <!-- 推荐搭配区域 -->
+    <section id="recommendation-section" class="mb-8 hidden">
+      <div class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl shadow-md p-6 animate-fade-in">
+        <div class="flex items-start">
+          <div class="bg-secondary/20 text-secondary p-3 rounded-full mr-4">
+            <i class="fa fa-lightbulb-o text-xl"></i>
+          </div>
+          <div class="w-full">
+            <h2 class="text-xl font-bold text-gray-800 mb-2">推荐役种</h2>
+            
+            <!-- 已凑成的配队 -->
+            <div id="completed-teams" class="mb-6 hidden">
+              <h3 id="completed-teams-title" class="text-lg font-semibold text-success mb-2">🎉 已凑成的配队</h3>
+              <div id="completed-teams-content" class="space-y-3"></div>
+            </div>
+            
+            <!-- 胡牌建议 -->
+            <div id="winning-suggestions" class="mb-6 hidden">
+              <h3 class="text-lg font-semibold text-primary mb-2">🎯 胡牌建议</h3>
+              <div id="winning-suggestions-content" class="space-y-3"></div>
+            </div>
+            
+            <!-- 推荐添加的成员 -->
+            <div id="recommended-members">
+              <p class="text-gray-600 mb-4">根据你已选的成员，我们推荐以下搭配以达成最佳组合：</p>
+              <div id="recommendation-content"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 凑牌建议列表 -->
+    <section id="results-section" class="mb-8 hidden">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">凑牌建议</h2>
+      <div id="results-container" class="space-y-4"></div>
+    </section>
+
+    <!-- 胜利进度提示 -->
+    <section id="progress-section" class="bg-white rounded-xl shadow-md p-6 mb-8 hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">胜利进度</h2>
+          <p class="text-gray-600">已凑齐 <span id="completed-count" class="font-bold text-success">0</span> / 3 个役种（每个役种至少3人，且役种间人员无重叠）</p>
+        </div>
+        <div class="w-32 h-32 relative">
+          <svg class="w-full h-full" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="10"></circle>
+            <circle id="progress-circle" cx="50" cy="50" r="45" fill="none" stroke="#16a34a" stroke-width="10" stroke-dasharray="282.74" stroke-dashoffset="282.74" transform="rotate(-90 50 50)"></circle>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span id="progress-percentage" class="text-2xl font-bold text-primary">0%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 胜利提示模态框 -->
+    <div id="victory-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 animate-slide-up">
+        <div class="text-center">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/20 text-success text-3xl mb-4">
+            <i class="fa fa-trophy"></i>
+          </div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-2">恭喜！</h2>
+          <p class="text-xl text-gray-600 mb-6">已达成胜利条件！</p>
+          <p class="text-gray-500 mb-6">你已成功凑齐 3 个役种（每个役种至少3人，且役种间人员无重叠）</p>
+          <button id="close-victory-modal" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+            继续游戏
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据库管理链接 -->
+    <div class="text-center mb-8">
+      <a href="database.html" class="inline-flex items-center justify-center bg-secondary hover:bg-secondary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+        <i class="fa fa-database mr-2"></i> 役种数据库管理
+      </a>
+    </div>
+    
+    <!-- 底部信息 -->
+    <footer class="text-center text-gray-500 text-sm mt-12">
+      <p>ES麻将役种查询助手 © 2025</p>
+      <p>制作：xhs账号-yuovo；Github-Aruai</p>
+      <p>素材及规则来源：偶像梦幻祭2 & Happy elements K.K</p>
+      <p>特别鸣谢：麻友-喜欢涟纯的小黄老师提供的规则书整理</p>
+              <p>小红书-10378083769-对麻将入门玩法的翻译</p>
+    </footer>
+  </div>
+
+  <script>
+    // 全局变量
+    let allMembers = new Set();
+    let selectedMembersList = [];
+    
+    // DOM元素
+    const memberInput = document.getElementById('member-input');
+    const suggestions = document.getElementById('suggestions');
+    const addMemberBtn = document.getElementById('add-member-btn');
+    const searchBtn = document.getElementById('search-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const selectedMembers = document.getElementById('selected-members');
+    const resultsSection = document.getElementById('results-section');
+    const resultsContainer = document.getElementById('results-container');
+    const progressSection = document.getElementById('progress-section');
+    const completedCount = document.getElementById('completed-count');
+    const progressCircle = document.getElementById('progress-circle');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const victoryModal = document.getElementById('victory-modal');
+    const closeVictoryModal = document.getElementById('close-victory-modal');
+    
+    // 从数据中提取所有唯一成员
+    function extractAllMembers() {
+      const members = new Set();
+      esMahjongData.forEach(combination => {
+        combination.members.forEach(member => {
+          if (member && member !== '-') {
+            members.add(member);
+          }
+        });
+      });
+      return members;
+    }
+    
+    // 添加成员
+    function addMember(member) {
+      if (!selectedMembersList.includes(member)) {
+        selectedMembersList.push(member);
+        renderSelectedMembers();
+        console.log('已添加成员:', member);
+        console.log('当前已选成员列表:', selectedMembersList);
+      }
+    }
+    
+    // 移除成员
+    function removeMember(member) {
+      selectedMembersList = selectedMembersList.filter(m => m !== member);
+      renderSelectedMembers();
+      console.log('已移除成员:', member);
+    }
+    
+    // 渲染已选成员标签
+    function renderSelectedMembers() {
+      console.log('渲染已选成员，列表长度:', selectedMembersList.length);
+      selectedMembers.innerHTML = selectedMembersList
+        .map(member => `
+          <div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm flex items-center">
+            ${member}
+            <button class="ml-2 text-primary/70 hover:text-primary" onclick="removeMember('${member}')">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+        `)
+        .join('');
+      
+      // 更新已选人数显示
+      document.getElementById('selected-count').textContent = `已选人数: ${selectedMembersList.length}`;
+    }
+    
+    // 成员自动完成功能
+    function setupMemberInput() {
+      console.log('设置成员输入功能...');
+      
+      // 成员自动完成功能
+      memberInput.addEventListener('input', function() {
+        const inputValue = this.value.trim();
+        console.log(`输入内容: "${inputValue}"`);
+        
+        // 如果输入框为空，隐藏建议
+        if (!inputValue) {
+          suggestions.classList.add('hidden');
+          return;
+        }
+        
+        // 过滤匹配的成员（不区分大小写）
+        const matchedMembers = Array.from(allMembers).filter(member => 
+          member.toLowerCase().includes(inputValue.toLowerCase()) && !selectedMembersList.includes(member)
+        );
+        
+        console.log(`找到 ${matchedMembers.length} 个匹配的成员`);
+        
+        // 显示建议
+        if (matchedMembers.length > 0) {
+          suggestions.innerHTML = matchedMembers
+            .slice(0, 10)
+            .map(member => `<div class="px-4 py-2 hover:bg-gray-100 cursor-pointer">${member}</div>`)
+            .join('');
+          suggestions.classList.remove('hidden');
+          
+          // 添加点击事件
+          suggestions.querySelectorAll('div').forEach(item => {
+            item.addEventListener('click', function() {
+              const memberName = this.textContent.trim();
+              console.log('点击建议项:', memberName);
+              addMember(memberName);
+              memberInput.value = '';
+              suggestions.classList.add('hidden');
+            });
+          });
+        } else {
+          suggestions.innerHTML = '<div class="px-4 py-2 text-gray-500">未找到匹配的成员</div>';
+          suggestions.classList.remove('hidden');
+        }
+      });
+      
+      // 点击添加按钮
+      if (addMemberBtn) {
+        console.log('绑定添加按钮事件...');
+        addMemberBtn.addEventListener('click', function() {
+          const inputValue = memberInput.value.trim();
+          if (inputValue) {
+            console.log('点击添加按钮:', inputValue);
+            // 尝试添加输入的成员
+            if (allMembers.has(inputValue)) {
+              addMember(inputValue);
+              memberInput.value = '';
+              suggestions.classList.add('hidden');
+            } else {
+              // 尝试按逗号分隔添加多个成员
+              const members = inputValue.split(',').map(m => m.trim()).filter(m => m);
+              console.log('按逗号分隔的成员列表:', members);
+              members.forEach(member => {
+                if (allMembers.has(member)) {
+                  addMember(member);
+                } else {
+                  console.log('成员不存在:', member);
+                }
+              });
+              memberInput.value = '';
+              suggestions.classList.add('hidden');
+            }
+          }
+        });
+      }
+      
+      // 回车键触发添加成员
+      console.log('绑定回车键事件...');
+      memberInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+          const inputValue = this.value.trim();
+          if (inputValue) {
+            console.log('回车键添加成员:', inputValue);
+            // 尝试添加输入的成员
+            if (allMembers.has(inputValue)) {
+              addMember(inputValue);
+              this.value = '';
+            } else {
+              // 尝试按逗号分隔添加多个成员
+              const members = inputValue.split(',').map(m => m.trim()).filter(m => m);
+              console.log('按逗号分隔的成员列表:', members);
+              members.forEach(member => {
+                if (allMembers.has(member)) {
+                  addMember(member);
+                } else {
+                  console.log('成员不存在:', member);
+                }
+              });
+              this.value = '';
+            }
+          } else {
+            search();
+          }
+        }
+      });
+      
+      // 点击页面其他地方隐藏建议
+      document.addEventListener('click', function(event) {
+        if (!memberInput.contains(event.target) && !suggestions.contains(event.target) && !addMemberBtn.contains(event.target)) {
+          suggestions.classList.add('hidden');
+        }
+      });
+      
+      console.log('成员输入功能设置完成');
+    }
+    
+    // 设置事件监听器
+    function setupEventListeners() {
+      searchBtn.addEventListener('click', search);
+      
+      // 清除按钮事件
+      clearBtn.addEventListener('click', function() {
+        selectedMembersList = [];
+        renderSelectedMembers();
+        resultsSection.classList.add('hidden');
+        progressSection.classList.add('hidden');
+        document.getElementById('recommendation-section').classList.add('hidden');
+      });
+      
+      // 关闭胜利模态框
+      closeVictoryModal.addEventListener('click', function() {
+        victoryModal.classList.add('hidden');
+      });
+    }
+    
+    // 搜索功能
+    function search() {
+      if (selectedMembersList.length === 0) {
+        alert('请至少选择一个成员');
+        return;
+      }
+      
+      // 筛选包含所选成员的役种
+      const filteredCombinations = esMahjongData.filter(combination => {
+        // 检查役种是否包含至少一个所选成员
+        return combination.members.some(member => 
+          selectedMembersList.includes(member) && member !== '-'
+        );
+      });
+      
+      // 为每个役种计算已凑齐成员数量
+      const combinationsWithStatus = filteredCombinations.map(combination => {
+        const validMembers = combination.members.filter(m => m !== '-');
+        const completedMembers = validMembers.filter(member => 
+          selectedMembersList.includes(member)
+        );
+        const pendingMembers = validMembers.filter(member => 
+          !selectedMembersList.includes(member)
+        );
+        
+        // 定义事务所特殊单位和对应的团体LOGO
+        const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
+        const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
+        
+        // 检查事务所特殊单位规则
+        let meetsOfficeRule = true;
+        const hasOfficeUnit = completedMembers.some(member => 
+          officeUnits.includes(member)
+        );
+        const hasGroupLogo = completedMembers.some(member => 
+          groupLogos.includes(member)
+        );
+        
+        // 如果役种包含事务所特殊单位，则必须同时包含团体LOGO
+        if (hasOfficeUnit && !hasGroupLogo) {
+          meetsOfficeRule = false;
+        }
+        
+        return {
+          ...combination,
+          completedMembers,
+          pendingMembers,
+          completedCount: completedMembers.length,
+          totalMembers: validMembers.length,
+          isCompleted: completedMembers.length >= 3 && meetsOfficeRule // 仅需凑够其中的三张牌，且符合特殊规则
+        };
+      });
+      
+      // 按已凑齐成员数量降序排列，相同数量按原始顺序
+      combinationsWithStatus.sort((a, b) => {
+        if (a.completedCount !== b.completedCount) {
+          return b.completedCount - a.completedCount;
+        }
+        return filteredCombinations.indexOf(a) - filteredCombinations.indexOf(b);
+      });
+      
+      // 生成推荐搭配
+      generateRecommendations(combinationsWithStatus);
+      
+      // 渲染结果
+      renderResults(combinationsWithStatus);
+      
+      // 更新进度
+      updateProgress(combinationsWithStatus);
+    }
+    
+    // 生成推荐搭配
+    function generateRecommendations(combinations) {
+      const recommendationSection = document.getElementById('recommendation-section');
+      const recommendationContent = document.getElementById('recommendation-content');
+      const completedTeams = document.getElementById('completed-teams');
+      const completedTeamsContent = document.getElementById('completed-teams-content');
+      const recommendedMembers = document.getElementById('recommended-members');
+      const winningSuggestions = document.getElementById('winning-suggestions');
+      const winningSuggestionsContent = document.getElementById('winning-suggestions-content');
+      
+      // 显示已凑成的配队
+      const allCompletedCombinations = combinations.filter(c => c.isCompleted);
+      if (allCompletedCombinations.length > 0) {
+        // 找出不重复成员的最优组合
+        const optimalCombinations = findOptimalCombinations(allCompletedCombinations);
+        
+        // 根据最优组合数量设置标题
+        const completedTeamsTitle = document.getElementById('completed-teams-title');
+        if (optimalCombinations.length === 3) {
+          completedTeamsTitle.textContent = '🎉 恭喜胡牌！';
+        } else {
+          completedTeamsTitle.textContent = '🎉 已凑成的配队';
+        }
+        
+        // 渲染最优组合（放在最前面）
+        let completedHtml = '';
+        
+        if (optimalCombinations.length > 0) {
+          completedHtml += `
+            <div class="bg-gradient-to-r from-success/10 to-success/5 rounded-lg p-4 border border-success/30 mb-4">
+              <div class="flex justify-between items-center mb-3">
+                <h4 class="font-medium text-success flex items-center">
+                  <i class="fa fa-star mr-2"></i> 最佳组合
+                </h4>
+                <span class="text-xs bg-success/20 text-success px-2 py-1 rounded-full">
+                  总分: ${optimalCombinations.reduce((sum, c) => sum + c.score, 0)}
+                </span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                ${optimalCombinations.map(combination => `
+                  <div class="bg-white/70 rounded-lg p-3 border border-success/20">
+                    <div class="flex justify-between items-center mb-2">
+                      <h5 class="font-medium text-success">${combination.name}</h5>
+                      <span class="text-xs bg-success/20 text-success px-2 py-1 rounded-full">
+                        ${combination.category} | ${combination.score}分
+                      </span>
+                    </div>
+                    <div class="flex flex-wrap">
+                      ${combination.completedMembers.map(member => 
+                        `<span class="member-tag member-tag-completed">${member}</span>`
+                      ).join('')}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+        
+        // 渲染其他已凑成的役种（排除最优组合中已包含的和成员重复的）
+        // 收集最优组合中已使用的成员
+        const usedMembers = new Set();
+        optimalCombinations.forEach(combination => {
+          combination.completedMembers.forEach(member => usedMembers.add(member));
+        });
+        
+        // 过滤出不包含已使用成员的其他已凑成役种
+        const otherCompletedCombinations = allCompletedCombinations.filter(c => 
+          !optimalCombinations.some(oc => oc.name === c.name) &&
+          !c.completedMembers.some(member => usedMembers.has(member))
+        );
+        
+        if (otherCompletedCombinations.length > 0) {
+          completedHtml += `
+            <div class="space-y-3">
+              ${otherCompletedCombinations.map(combination => `
+                <div class="bg-white/50 rounded-lg p-4 border border-success/20">
+                  <div class="flex justify-between items-center mb-2">
+                    <h4 class="font-medium text-success">${combination.name}</h4>
+                    <span class="text-xs bg-success/20 text-success px-2 py-1 rounded-full">
+                      ${combination.category} | 加分: ${combination.score}
+                    </span>
+                  </div>
+                  <div class="flex flex-wrap">
+                    ${combination.completedMembers.map(member => 
+                      `<span class="member-tag member-tag-completed">${member}</span>`
+                    ).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+        
+        completedTeamsContent.innerHTML = completedHtml;
+        completedTeams.classList.remove('hidden');
+      } else {
+        completedTeams.classList.add('hidden');
+      }
+      
+      // 生成胡牌建议（当已选成员达到或超过9个，但未达成胜利条件时）
+      if (selectedMembersList.length >= 9) {
+        recommendedMembers.classList.add('hidden');
+        
+        // 检查是否已达成胜利条件
+        const optimalCombinations = findOptimalCombinations(allCompletedCombinations);
+        
+        // 如果未达成胜利条件，生成胡牌建议
+        if (optimalCombinations.length < 3) {
+          const winningSuggestion = generateWinningSuggestion(combinations);
+          
+          if (winningSuggestion) {
+            winningSuggestionsContent.innerHTML = `
+              <div class="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/30">
+                <div class="flex items-center mb-3">
+                  <div class="bg-primary/20 text-primary p-2 rounded-full mr-3">
+                    <i class="fa fa-exchange"></i>
+                  </div>
+                  <h4 class="font-medium text-primary">替换建议</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <p class="text-sm text-gray-600 mb-1">建议移除:</p>
+                    <div class="flex flex-wrap">
+                      ${winningSuggestion.removeMembers.map(member => `
+                        <span class="bg-danger/10 text-danger px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center">
+                          ${member}
+                          <i class="fa fa-times-circle ml-1"></i>
+                        </span>
+                      `).join('')}
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-600 mb-1">建议抓取:</p>
+                    <div class="flex flex-wrap">
+                      ${winningSuggestion.addMembers.map(member => `
+                        <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center">
+                          ${member}
+                          <i class="fa fa-plus-circle ml-1"></i>
+                        </span>
+                      `).join('')}
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-500 mt-2">
+                    替换后可达成 <span class="font-medium text-primary">${winningSuggestion.newScore}</span> 分的胡牌组合
+                  </p>
+                </div>
+              </div>
+            `;
+            winningSuggestions.classList.remove('hidden');
+          } else {
+            winningSuggestions.classList.add('hidden');
+          }
+        } else {
+          winningSuggestions.classList.add('hidden');
+        }
+      } else {
+        // 生成推荐添加的成员
+        const recommendedMembersList = generateRecommendedMembers(combinations);
+        
+        if (recommendedMembersList.length > 0) {
+          recommendationContent.innerHTML = `
+            <div class="space-y-3 mb-3">
+              ${recommendedMembersList.slice(0, 5).map(member => `
+                <div class="bg-white/50 rounded-lg p-3 border border-secondary/20">
+                  <div class="flex items-center justify-between">
+                    <span class="bg-secondary/20 text-secondary px-3 py-1 rounded-full text-sm flex items-center">
+                      ${member.name}
+                      <button class="ml-2 text-secondary/70 hover:text-secondary" onclick="addMember('${member.name}')">
+                        <i class="fa fa-plus-circle"></i>
+                      </button>
+                    </span>
+                    <span class="text-xs text-gray-500">推荐指数: ${member.score}</span>
+                  </div>
+                  
+                  ${member.combinations.length > 0 ? `
+                    <div class="mt-2">
+                      <p class="text-xs text-gray-500 mb-1">可帮助完成:</p>
+                      <div class="flex flex-wrap">
+                        ${member.combinations.map(combination => `
+                          <span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs mr-1 mb-1">
+                            ${combination.name} (${combination.score}分)
+                          </span>
+                        `).join('')}
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+            <p class="text-sm text-gray-500">
+              添加这些成员可以帮助你更快凑齐高加分役种！点击成员标签即可快速添加。
+            </p>
+          `;
+        } else {
+          recommendationContent.innerHTML = `
+            <div class="bg-white/50 rounded-lg p-4 border border-gray-200 text-center">
+              <p class="text-gray-600">暂无推荐成员</p>
+              <p class="text-sm text-gray-500 mt-1">请尝试选择更多成员以获取推荐</p>
+            </div>
+          `;
+        }
+        
+        recommendedMembers.classList.remove('hidden');
+        winningSuggestions.classList.add('hidden');
+      }
+      
+      recommendationSection.classList.remove('hidden');
+    }
+    
+    // 生成推荐成员
+    function generateRecommendedMembers(combinations) {
+      // 定义事务所特殊单位和团体LOGO
+      const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
+      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
+      
+      // 收集所有可能的成员
+      const potentialMembers = new Set();
+      combinations.forEach(combination => {
+        combination.pendingMembers.forEach(member => {
+          if (member && member !== '-') {
+            potentialMembers.add(member);
+          }
+        });
+      });
+      
+      // 计算每个成员的推荐分数
+      const memberScores = [];
+      potentialMembers.forEach(member => {
+        let score = 0;
+        const memberCombinations = [];
+        
+        combinations.forEach(combination => {
+          // 如果成员可以帮助完成这个役种
+          if (combination.pendingMembers.includes(member) && combination.completedCount >= 2) {
+            // 检查是否符合事务所特殊单位规则
+            let meetsOfficeRule = true;
+            
+            // 临时计算添加当前成员后的completedMembers
+            const tempCompletedMembers = [...combination.completedMembers, member];
+            
+            // 检查是否包含事务所特殊单位
+            const hasOfficeUnit = tempCompletedMembers.some(m => officeUnits.includes(m));
+            // 检查是否包含团体LOGO
+            const hasGroupLogo = tempCompletedMembers.some(m => groupLogos.includes(m.toLowerCase()) || groupLogos.includes(m));
+            
+            // 如果役种包含事务所特殊单位，则必须同时包含团体LOGO
+            if (hasOfficeUnit && !hasGroupLogo) {
+              meetsOfficeRule = false;
+            }
+            
+            // 只有符合规则的役种才计入推荐分数
+            if (meetsOfficeRule) {
+              // 计算分数：役种加分 * (已完成成员数 / 总成员数)
+              const contribution = combination.score * (combination.completedCount / combination.totalMembers);
+              score += contribution;
+              memberCombinations.push({
+                name: combination.name,
+                score: combination.score
+              });
+            }
+          }
+        });
+        
+        if (score > 0) {
+          memberScores.push({
+            name: member,
+            score: Math.round(score),
+            combinations: memberCombinations
+          });
+        }
+      });
+      
+      // 按分数降序排列
+      memberScores.sort((a, b) => b.score - a.score);
+      
+      return memberScores;
+    }
+    
+    // 生成胡牌建议
+    function generateWinningSuggestion(combinations) {
+      // 定义事务所特殊单位和团体LOGO
+      const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
+      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
+      
+      // 找出所有已凑齐的役种
+      const completedCombinations = combinations.filter(c => c.isCompleted);
+      
+      // 找出所有接近凑齐的役种（已凑齐2人）
+      const nearCompletedCombinations = combinations.filter(c => c.completedCount === 2);
+      
+      // 如果有接近凑齐的役种，尝试找出可以替换的成员
+      if (nearCompletedCombinations.length > 0) {
+        // 按加分降序排列
+        nearCompletedCombinations.sort((a, b) => b.score - a.score);
+        
+        // 尝试每个接近凑齐的役种
+        for (const combination of nearCompletedCombinations) {
+          // 需要的成员
+          const neededMember = combination.pendingMembers[0];
+          
+          // 检查添加这个成员后是否符合事务所特殊单位规则
+          let meetsOfficeRule = true;
+          const tempCompletedMembers = [...combination.completedMembers, neededMember];
+          const hasOfficeUnit = tempCompletedMembers.some(m => officeUnits.includes(m));
+          const hasGroupLogo = tempCompletedMembers.some(m => groupLogos.includes(m.toLowerCase()) || groupLogos.includes(m));
+          
+          if (hasOfficeUnit && !hasGroupLogo) {
+            meetsOfficeRule = false;
+          }
+          
+          // 只有符合规则的役种才生成胡牌建议
+          if (meetsOfficeRule) {
+            // 找出可以移除的成员（不在已凑齐役种中的成员）
+            const removableMembers = selectedMembersList.filter(member => {
+              // 检查成员是否在已凑齐的役种中
+              const inCompletedCombination = completedCombinations.some(c => 
+                c.completedMembers.includes(member)
+              );
+              
+              return !inCompletedCombination && !combination.completedMembers.includes(member);
+            });
+            
+            if (removableMembers.length > 0) {
+              // 计算替换后的总分
+              const currentScore = completedCombinations.reduce((sum, c) => sum + c.score, 0);
+              const newScore = currentScore + combination.score;
+              
+              return {
+                removeMembers: [removableMembers[0]],
+                addMembers: [neededMember],
+                newScore: newScore
+              };
+            }
+          }
+        }
+      }
+      
+      return null;
+    }
+    
+    // 渲染结果
+    function renderResults(combinations) {
+      resultsContainer.innerHTML = combinations
+        .map(combination => `
+          <div class="bg-white rounded-xl shadow-md p-6 card-hover">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">${combination.name}</h3>
+                <div class="flex items-center mt-1">
+                  <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">${combination.category}</span>
+                  <span class="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs ml-2">+${combination.score}分</span>
+                </div>
+              </div>
+              <div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                已凑 ${combination.completedCount}/${combination.totalMembers} 人
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">成员列表:</h4>
+              <div class="flex flex-wrap">
+                ${combination.completedMembers.map(member => 
+                  `<span class="member-tag member-tag-completed">${member}</span>`
+                ).join('')}
+                ${combination.pendingMembers.map(member => 
+                  `<span class="member-tag member-tag-pending">${member}</span>`
+                ).join('')}
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="text-sm font-medium text-gray-700">还需: </span>
+                <span class="text-sm ${combination.pendingMembers.length > 0 ? 'text-neutral' : 'text-success'}">
+                  ${combination.pendingMembers.length > 0 
+                    ? `${combination.pendingMembers.length} 人 (${combination.pendingMembers.join(', ')})` 
+                    : '已凑齐！'}
+                </span>
+              </div>
+              ${combination.isCompleted ? `
+                <div class="bg-success/20 text-success px-3 py-1 rounded-full text-sm font-medium">
+                  ✓ 已凑齐
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `)
+        .join('');
+      
+      resultsSection.classList.remove('hidden');
+    }
+    
+    // 更新进度
+    function updateProgress(combinations) {
+      // 找出所有已凑齐的役种
+      const allCompletedCombinations = combinations.filter(c => c.isCompleted);
+      
+      // 计算不重复成员的役种组合
+      const optimalCombinations = findOptimalCombinations(allCompletedCombinations);
+      const count = optimalCombinations.length;
+      const percentage = Math.min(100, Math.round((count / 3) * 100));
+      
+      completedCount.textContent = count;
+      progressPercentage.textContent = `${percentage}%`;
+      
+      // 更新进度环
+      const circumference = 2 * Math.PI * 45;
+      const offset = circumference - (percentage / 100) * circumference;
+      progressCircle.style.strokeDashoffset = offset;
+      
+      progressSection.classList.remove('hidden');
+      
+      // 检查是否达成胜利条件（3个不重复成员的役种）
+      if (count >= 3) {
+        // 显示胜利提示（每个役种仅需凑够其中的三张牌，且役种间人员无重叠）
+        victoryModal.classList.remove('hidden');
+      }
+    }
+    
+    // 找出不重复成员的最优组合
+    function findOptimalCombinations(combinations) {
+      // 定义事务所特殊单位和对应的团体LOGO
+      const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
+      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
+      
+      // 按加分高低排序
+      const sortedCombinations = [...combinations].sort((a, b) => b.score - a.score);
+      
+      // 使用回溯算法寻找最优组合
+      let bestCombination = [];
+      let bestScore = 0;
+      let bestMemberCount = 0;
+      
+      function backtrack(index, currentCombination, usedMembers) {
+        // 计算当前组合的总分和成员数
+        const totalScore = currentCombination.reduce((sum, c) => sum + c.score, 0);
+        const totalMembers = usedMembers.size;
+        
+        // 如果当前组合已经达到3个役种，检查是否是最优解
+        if (currentCombination.length === 3) {
+          // 优先选择总分高的组合，其次选择成员数多的组合
+          if (totalScore > bestScore || 
+              (totalScore === bestScore && totalMembers > bestMemberCount)) {
+            bestScore = totalScore;
+            bestMemberCount = totalMembers;
+            bestCombination = [...currentCombination];
+          }
+          return;
+        }
+        
+        // 如果已经遍历完所有役种，检查当前组合是否比已有最优解更好
+        if (index >= sortedCombinations.length) {
+          if (currentCombination.length > 0 && 
+              (totalScore > bestScore || 
+               (totalScore === bestScore && totalMembers > bestMemberCount))) {
+            bestScore = totalScore;
+            bestMemberCount = totalMembers;
+            bestCombination = [...currentCombination];
+          }
+          return;
+        }
+        
+        // 尝试不选择当前役种
+        backtrack(index + 1, currentCombination, usedMembers);
+        
+        // 尝试选择当前役种（如果成员不重复且符合特殊规则）
+        const currentCombinationMembers = new Set();
+        sortedCombinations[index].completedMembers.forEach(member => {
+          currentCombinationMembers.add(member);
+        });
+        
+        // 检查是否有重复成员
+        let hasDuplicate = false;
+        for (const member of currentCombinationMembers) {
+          if (usedMembers.has(member)) {
+            hasDuplicate = true;
+            break;
+          }
+        }
+        
+        // 检查是否符合事务所特殊单位规则
+        let followsOfficeRule = true;
+        const hasOfficeUnit = Array.from(currentCombinationMembers).some(member => 
+          officeUnits.includes(member)
+        );
+        const hasGroupLogo = Array.from(currentCombinationMembers).some(member => 
+          groupLogos.includes(member)
+        );
+        
+        // 如果役种包含事务所特殊单位，则必须同时包含团体LOGO
+        if (hasOfficeUnit && !hasGroupLogo) {
+          followsOfficeRule = false;
+        }
+        
+        if (!hasDuplicate && followsOfficeRule) {
+          // 添加当前役种的成员到已使用集合
+          const newUsedMembers = new Set(usedMembers);
+          currentCombinationMembers.forEach(member => {
+            newUsedMembers.add(member);
+          });
+          
+          // 递归调用
+          backtrack(index + 1, [...currentCombination, sortedCombinations[index]], newUsedMembers);
+        }
+      }
+      
+      // 开始回溯
+      backtrack(0, [], new Set());
+      
+      // 如果没有找到组合，尝试找单个役种
+      if (bestCombination.length === 0 && sortedCombinations.length > 0) {
+        return [sortedCombinations[0]];
+      }
+      
+      return bestCombination;
+    }
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('页面加载完成，开始初始化...');
+      
+      // 提取所有成员
+      allMembers = extractAllMembers();
+      console.log('提取到', allMembers.size, '个成员');
+      
+      // 设置成员输入功能
+      setupMemberInput();
+      
+      // 设置事件监听器
+      setupEventListeners();
+      
+      console.log('初始化完成！');
+    });
+  </script>
+  
+  <!-- 游戏规则模态框 -->
+  <div id="rules-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto mx-4 animate-slide-up">
+      <div class="flex justify-between items-start mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">游戏规则说明</h2>
+        <button id="close-rules-modal" class="text-gray-500 hover:text-gray-700 text-xl">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-6 text-gray-700">
+        <section>
+          <h3 class="text-xl font-semibold text-primary mb-3">开始前的准备</h3>
+          <div class="space-y-4 pl-4">
+            <div>
+              <h4 class="font-medium text-lg mb-2">1. 决定庄家</h4>
+              <ul class="list-disc pl-6 space-y-1">
+                <li>通过 猜拳 决定谁是庄家。</li>
+                <li>每局游戏结束后，庄家顺时针轮换一次。</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">2. 摆牌</h4>
+              <ul class="list-disc pl-6 space-y-1">
+                <li>所有的牌背面朝下洗匀。四人围坐成方形。</li>
+                <li>每人面前都要摆出两层的"牌山"：</li>
+                <li class="list-none pl-6">- 庄家：一层11张 × 2排（共22张）</li>
+                <li class="list-none pl-6">- 其余三人：一层10张 × 2排（共20张）</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">3. 分牌</h4>
+              <ul class="list-disc pl-6 space-y-1">
+                <li>从庄家右边开始，庄家起顺时针方向，每次给每位玩家发2张牌。</li>
+                <li>除庄家外每人共收到8张牌，庄家收到9张牌。</li>
+                <li>所有玩家把手牌理好，不要让别人看到。</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        
+        <hr class="border-gray-200">
+        
+        <section>
+          <h3 class="text-xl font-semibold text-primary mb-3">获胜方式</h3>
+          <p class="mb-2">游戏目标是通过摸牌与换牌，使自己的 9张手牌 组成如下特定的牌型。</p>
+          <div class="space-y-4 pl-4">
+            <div>
+              <h4 class="font-medium text-lg mb-2">1. 事务所组合</h4>
+              <p>9张牌全部属于同一事务所（含事务所Logo、组合Logo及该事务所成员）。</p>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">2. Unit组合</h4>
+              <p>9张牌组成「3+3+3」的结构。</p>
+              <p>每组三张为一组（称为"セット"），1セット可以是：</p>
+              <ul class="list-disc pl-6 space-y-1">
+                <li>背景色相同（同一组合或包含该组合Logo）</li>
+                <li>或 事务所Logo + 该事务所所属偶像（团体Logo）</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        
+        <hr class="border-gray-200">
+        
+        <section>
+          <h3 class="text-xl font-semibold text-primary mb-3">游戏流程</h3>
+          <div class="space-y-4 pl-4">
+            <div>
+              <h4 class="font-medium text-lg mb-2">1. 由庄家先出牌</h4>
+              <ul class="list-disc pl-6">
+                <li>因为庄家有9张手牌，所以第一回合要先打出1张牌</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">2. 按顺时针轮流摸牌与出牌</h4>
+              <ul class="list-disc pl-6">
+                <li>从庄家开始，每位玩家从牌山摸1张，然后再丢1张不要的牌。</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">3. 弃牌场</h4>
+              <ul class="list-disc pl-6">
+                <li>所有打出的牌放在自己面前左侧，从里到外依次排列。</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">4. 听牌</h4>
+              <div>
+                <h5 class="font-medium mb-1">① 听牌（リーチ）</h5>
+                <ul class="list-disc pl-6">
+                  <li>当只差一组即可获胜时，可宣布"リーチ！"</li>
+                </ul>
+              </div>
+              <div>
+                <h5 class="font-medium mb-1">② リーチ规则</h5>
+                <ul class="list-disc pl-6">
+                  <li>丢出最后1张不要的牌后，将这张牌横放表示听牌状态。</li>
+                  <li>宣布リーチ后，手牌不得更换，只能【摸一张、出一张】。</li>
+                  <li>若摸到或别人打出你所缺的那张牌，就可立即"ドンジャラ！"。</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">4. 宣布"ドンジャラ！"</h4>
+              <ul class="list-disc pl-6">
+                <li>当玩家凑齐胜利牌型时，大喊"ドンジャラ！"</li>
+                <li>翻开自己的手牌，让其他玩家确认。</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        
+        <hr class="border-gray-200">
+        
+        <section>
+          <h3 class="text-xl font-semibold text-primary mb-3">特别规则</h3>
+          <div class="space-y-4 pl-4">
+            <div>
+              <h4 class="font-medium text-lg mb-2">1. よこどり（抢牌）</h4>
+              <ul class="list-disc pl-6">
+                <li>当上家打出的牌能让你完成一组时，可喊よこどり！</li>
+                <li>把那张牌拿走，与自己手中2张牌组成1组，正面朝上放在右手边。</li>
+                <li>然后出1张不要的牌。此局不再摸牌，保持手牌8张。</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 class="font-medium text-lg mb-2">2. 特殊牌</h4>
+              <ul class="list-disc pl-6">
+                <li>NPC牌带有特殊效果，打出该牌时，可以发动对应的特殊能力，具体如下：（玩家可自由决定是否加入该功能）</li>
+                <li>佐贺美阵：选择一名其他玩家，让该玩家下一回合休息</li>
+                <li>门章臣：可以把自己一张打出的牌与手持的一张牌交换</li>
+                <li>冰鹰诚矢：下一回合可翻面（不公布是什么）打出一张牌，且这张牌不能被夺走（吃）</li>
+                <li>守门人：指定一名玩家，盲选该玩家的两张手牌和该玩家打出的两张牌交换</li>
+                <li>黑根：自己选择最多三张手牌打出，并再在牌山中摸牌，直到手牌摸满8张</li>
+                <li>NiceP：可以从所有玩家打出的牌中选择一张牌与自己的牌交换</li>
+                <li>小动物牌：把自己的一张手牌变成万能牌</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+      
+      <div class="mt-8 text-center">
+        <button id="confirm-rules-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+          我知道了
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 游戏规则模态框 -->
+  <div id="rules-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/50" id="modal-backdrop"></div>
+    <div class="relative bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 animate-fade-in">
+      <div class="flex justify-between items-start mb-4">
+        <h2 class="text-2xl font-bold text-gray-800">游戏规则</h2>
+        <button id="close-rules-modal" class="text-gray-500 hover:text-gray-700 text-xl">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- 游戏规则内容 -->
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-xl font-semibold text-gray-700 mb-3">开始前的准备</h3>
+          <ul class="list-disc pl-6 space-y-2 text-gray-600">
+            <li><strong>决定庄家：</strong>通过掷骰子决定初始庄家，之后每局轮换</li>
+            <li><strong>摆牌：</strong>将144张麻将牌按照特定规则摆放成山形</li>
+            <li><strong>分牌：</strong>每位玩家开始时获得13张手牌</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-xl font-semibold text-gray-700 mb-3">获胜方式</h3>
+          <ul class="list-disc pl-6 space-y-2 text-gray-600">
+            <li><strong>事务所组合：</strong>凑齐同事务所的特定角色组合</li>
+            <li><strong>Unit组合：</strong>凑齐同Unit的特定角色组合</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-xl font-semibold text-gray-700 mb-3">游戏流程</h3>
+          <ul class="list-disc pl-6 space-y-2 text-gray-600">
+            <li><strong>出牌：</strong>玩家轮流出一张手牌到牌池</li>
+            <li><strong>摸牌：</strong>从牌山摸一张牌补充手牌</li>
+            <li><strong>听牌：</strong>手牌接近胡牌状态时可宣布听牌</li>
+            <li><strong>宣布胜利：</strong>当手牌满足胡牌条件时宣布胜利</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-xl font-semibold text-gray-700 mb-3">特别规则</h3>
+          <ul class="list-disc pl-6 space-y-2 text-gray-600">
+            <li><strong>抢牌：</strong>特定情况下可以抢其他玩家打出的牌</li>
+            <li><strong>特殊牌效果：</strong>某些角色牌具有特殊效果，会影响游戏进程</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="mt-6 text-center">
+        <button id="confirm-rules-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+          我知道了
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 游戏规则模态框控制
+    document.addEventListener('DOMContentLoaded', function() {
+      const rulesBtn = document.getElementById('rule-btn'); // 修正ID为rule-btn
+      const rulesModal = document.getElementById('rules-modal');
+      const closeRulesModal = document.getElementById('close-rules-modal');
+      const confirmRulesBtn = document.getElementById('confirm-rules-btn');
+      const modalBackdrop = document.getElementById('modal-backdrop');
+      
+      // 显示规则模态框
+      rulesBtn.addEventListener('click', function() {
+        rulesModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      });
+      
+      // 隐藏规则模态框
+      function hideRulesModal() {
+        rulesModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      }
+      
+      closeRulesModal.addEventListener('click', hideRulesModal);
+      confirmRulesBtn.addEventListener('click', hideRulesModal);
+      modalBackdrop.addEventListener('click', hideRulesModal);
+      
+      // ESC键关闭模态框
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && !rulesModal.classList.contains('hidden')) {
+          hideRulesModal();
+        }
+      });
+    });
+  </script>
+
+  <script>
+  // 注册Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(registration => {
+          console.log('ServiceWorker 注册成功:', registration.scope);
+        })
+        .catch(error => {
+          console.log('ServiceWorker 注册失败:', error);
+        });
+    });
+  }
+</script>
+</body>
+</html>

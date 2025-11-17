@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ES麻将役种数据库管理</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 引入数据文件 -->
+  <script src="data.js"></script>
+  
+  <!-- PWA相关标签 -->
+  <meta name="theme-color" content="#4a5568">
+  <meta name="description" content="ES麻将役种数据库管理">
+  <meta name="author" content="Aruai">
+  <meta name="publisher" content="Aruai">
+  <link rel="manifest" href="./manifest.json">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#7e22ce', // 紫色
+            secondary: '#3b82f6', // 蓝色
+            success: '#16a34a', // 绿色
+            danger: '#dc2626', // 红色
+            neutral: '#64748b', // 灰色
+            dark: '#1e293b',
+            light: '#f8fafc'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-up': 'slideUp 0.5s ease-in-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+      .member-tag {
+        @apply px-2 py-1 rounded-full text-xs mr-1 mb-1;
+      }
+      .member-tag-completed {
+        @apply bg-success/20 text-success;
+      }
+      .member-tag-pending {
+        @apply bg-neutral/20 text-neutral;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-5xl">
+    <!-- 标题区域 -->
+    <header class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">ES麻将役种数据库管理</h1>
+        <p class="text-gray-600">管理和添加新的役种数据</p>
+      </div>
+      <a href="index.html" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center">
+        <i class="fa fa-arrow-left mr-2"></i> 返回查询助手
+      </a>
+    </header>
+
+  
+    <!-- 主要功能区域 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- 役种列表 -->
+      <div class="lg:col-span-3">
+        <div class="bg-white rounded-xl shadow-md p-6 w-full">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h2 class="text-2xl font-bold text-gray-800">役种列表</h2>
+            <div class="relative w-full md:w-auto">
+              <input type="text" id="search-input" placeholder="搜索役种..." class="w-full md:w-64 px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+              <button id="search-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-primary">
+                <i class="fa fa-search"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto max-h-[500px] overflow-y-auto w-full">
+            <table class="min-w-full divide-y divide-gray-200 table-auto w-full">
+              <thead class="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <!-- 桌面端列宽设置 -->
+                  <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[25%]">役种名称</th>
+                  <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">分类</th>
+                  <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">加分</th>
+                  <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[40%]">成员</th>
+                  <th scope="col" class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">操作</th>
+                  <!-- 移动端单列显示 -->
+                  <th scope="col" class="md:hidden px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">役种信息</th>
+                </tr>
+              </thead>
+              <tbody id="database-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- 数据将通过JavaScript动态填充 -->
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="mt-6 flex justify-between items-center">
+            <div class="text-sm text-gray-500">
+              共 <span id="total-count" class="font-medium">0</span> 个役种
+            </div>
+            <div class="flex space-x-2">
+              <button id="prev-page" class="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                上一页
+              </button>
+              <span id="page-info" class="px-3 py-1 text-sm">第 1 页</span>
+              <button id="next-page" class="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                下一页
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 数据操作区域 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <!-- 数据导入区域 -->
+      <section class="bg-white rounded-xl shadow-md p-6 w-full">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">数据导入</h2>
+        <div id="drag-area" class="drag-area">
+          <div class="flex flex-col items-center justify-center">
+            <i class="fa fa-cloud-upload text-5xl text-gray-400 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-700 mb-2">拖放JSON文件到此处</h3>
+            <p class="text-sm text-gray-500 mb-4">或</p>
+            <label for="file-input" class="bg-secondary hover:bg-secondary/90 text-white font-medium px-6 py-2 rounded-lg transition-all cursor-pointer">
+              <i class="fa fa-folder-open mr-2"></i> 选择文件
+            </label>
+            <input type="file" id="file-input" accept=".json,.js" class="hidden">
+            <p class="text-xs text-gray-500 mt-4">支持的文件格式: .json, .js</p>
+          </div>
+        </div>
+        <div id="import-message" class="mt-4 hidden"></div>
+      </section>
+
+      <!-- 数据导出区域 -->
+      <section class="bg-white rounded-xl shadow-md p-6 w-full">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">数据导出</h2>
+        <div class="flex flex-wrap gap-4">
+          <button id="export-json-btn" class="bg-secondary hover:bg-secondary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center">
+            <i class="fa fa-download mr-2"></i> 导出为JSON
+          </button>
+          <button id="export-csv-btn" class="bg-secondary hover:bg-secondary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center">
+            <i class="fa fa-file-text-o mr-2"></i> 导出为CSV
+          </button>
+        </div>
+      </section>
+    </div>
+  
+  
+        </div>
+      </div>
+
+  <!-- 确认删除模态框 -->
+  <div id="delete-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4 animate-slide-up">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-danger/20 text-danger text-3xl mb-4">
+          <i class="fa fa-exclamation-triangle"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">确认删除</h2>
+        <p class="text-gray-600 mb-6">你确定要删除役种 "<span id="delete-name" class="font-medium">役种名称</span>" 吗？</p>
+        <p class="text-gray-500 mb-6">此操作不可撤销</p>
+        <div class="flex space-x-3">
+          <button id="cancel-delete" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium px-6 py-2 rounded-lg transition-all">
+            取消
+          </button>
+          <button id="confirm-delete" class="flex-1 bg-danger hover:bg-danger/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+            确认删除
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作成功提示 -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-success text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <div class="flex items-center">
+      <i class="fa fa-check-circle mr-2"></i>
+      <span id="toast-message">操作成功</span>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let filteredData = [...esMahjongData];
+    let editingId = null;
+    
+    // DOM元素
+    const databaseTableBody = document.getElementById('database-table-body');
+    const totalCount = document.getElementById('total-count');
+    const prevPageBtn = document.getElementById('prev-page');
+    const nextPageBtn = document.getElementById('next-page');
+    const pageInfo = document.getElementById('page-info');
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const combinationForm = document.getElementById('combination-form');
+    const editIdInput = document.getElementById('edit-id');
+    const submitBtn = document.getElementById('submit-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const deleteModal = document.getElementById('delete-modal');
+    const deleteName = document.getElementById('delete-name');
+    const cancelDeleteBtn = document.getElementById('cancel-delete');
+    const confirmDeleteBtn = document.getElementById('confirm-delete');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const exportBtn = document.getElementById('export-btn');
+    const importFileInput = document.getElementById('import-file');
+    const fileNameDisplay = document.getElementById('file-name');
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      renderTable();
+      updatePagination();
+      
+      // 搜索功能
+      searchBtn.addEventListener('click', search);
+      searchInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+          search();
+        }
+      });
+      
+      // 分页功能
+      prevPageBtn.addEventListener('click', goToPrevPage);
+      nextPageBtn.addEventListener('click', goToNextPage);
+      
+      // 表单提交
+      combinationForm.addEventListener('submit', handleFormSubmit);
+      
+      // 取消编辑
+      cancelBtn.addEventListener('click', cancelEdit);
+      
+      // 删除功能
+      cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+      confirmDeleteBtn.addEventListener('click', confirmDelete);
+      
+      // 导出功能已移至setupEventListeners函数中
+      
+      // 导入功能
+      importFileInput.addEventListener('change', handleFileSelect);
+      
+      // 添加成员按钮
+      document.getElementById('add-member-btn').addEventListener('click', addMemberInput);
+      
+      // 分类选择事件
+      document.getElementById('category').addEventListener('change', function() {
+        const customCategoryContainer = document.getElementById('custom-category-container');
+        if (this.value === '自定义') {
+          customCategoryContainer.classList.remove('hidden');
+          // 聚焦到自定义输入框
+          document.getElementById('custom-category').focus();
+        } else {
+          customCategoryContainer.classList.add('hidden');
+        }
+      });
+      
+      // 自定义分类输入框回车事件
+      document.getElementById('custom-category').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          
+          const customCategory = this.value.trim();
+          if (!customCategory) {
+            showToast('请输入自定义分类名称', 'error');
+            return;
+          }
+          
+          const categorySelect = document.getElementById('category');
+          
+          // 检查是否已存在相同的分类
+          let optionExists = false;
+          for (let i = 0; i < categorySelect.options.length; i++) {
+            if (categorySelect.options[i].value === customCategory) {
+              optionExists = true;
+              categorySelect.selectedIndex = i;
+              break;
+            }
+          }
+          
+          // 如果不存在，添加新选项
+          if (!optionExists && categorySelect.options.length < 20) {
+            const newOption = document.createElement('option');
+            newOption.value = customCategory;
+            newOption.textContent = customCategory;
+            // 插入到"自定义"选项之前
+            categorySelect.insertBefore(newOption, categorySelect.lastElementChild);
+            // 选择新添加的选项
+            categorySelect.value = customCategory;
+          }
+          
+          // 隐藏自定义输入框
+          document.getElementById('custom-category-container').classList.add('hidden');
+          
+          // 显示成功提示
+          showToast(`分类"${customCategory}"已添加并选择`);
+        }
+      });
+    });
+    
+    // 添加成员输入框
+    function addMemberInput() {
+      const membersContainer = document.getElementById('members-container');
+      const currentInputs = membersContainer.querySelectorAll('input');
+      const currentCount = currentInputs.length;
+      
+      // 检查是否已达到最大数量限制
+      if (currentCount >= 99) {
+        showToast('已达到最大成员数量限制（99个）', 'error');
+        return;
+      }
+      
+      // 创建新的输入框
+      const newInput = document.createElement('input');
+      newInput.type = 'text';
+      newInput.name = `member${currentCount + 1}`;
+      newInput.placeholder = `成员${currentCount + 1} (可选)`;
+      newInput.className = 'w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary';
+      
+      // 添加到容器中
+      membersContainer.appendChild(newInput);
+      
+      // 滚动到新添加的输入框
+      newInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    // 渲染表格
+    function renderTable() {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const currentPageData = filteredData.slice(startIndex, endIndex);
+      
+      databaseTableBody.innerHTML = currentPageData
+        .map((combination, index) => `
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">${combination.name}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-500">${combination.category}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-500">${combination.score}</div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="text-sm text-gray-500">${combination.members.filter(m => m !== '-').join(', ')}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button onclick="editCombination(${startIndex + index})" class="text-secondary hover:text-secondary/80 mr-3">
+                编辑
+              </button>
+              <button onclick="showDeleteModal(${startIndex + index})" class="text-danger hover:text-danger/80">
+                删除
+              </button>
+            </td>
+          </tr>
+        `)
+        .join('');
+      
+      totalCount.textContent = filteredData.length;
+    }
+    
+    // 更新分页
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+      
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = currentPage === totalPages;
+      
+      pageInfo.textContent = `第 ${currentPage} / ${totalPages} 页`;
+    }
+    
+    // 搜索功能
+    function search() {
+      const searchTerm = searchInput.value.trim().toLowerCase();
+      
+      if (!searchTerm) {
+        filteredData = [...esMahjongData];
+      } else {
+        filteredData = esMahjongData.filter(combination => 
+          combination.name.toLowerCase().includes(searchTerm) ||
+          combination.category.toLowerCase().includes(searchTerm) ||
+          combination.members.some(member => 
+            member.toLowerCase().includes(searchTerm)
+          )
+        );
+      }
+      
+      currentPage = 1;
+      renderTable();
+      updatePagination();
+    }
+    
+    // 上一页
+    function goToPrevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+        updatePagination();
+      }
+    }
+    
+    // 下一页
+    function goToNextPage() {
+      const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+        updatePagination();
+      }
+    }
+    
+    // 编辑役种
+    function editCombination(index) {
+      const combination = filteredData[index];
+      editingId = index;
+      
+      // 填充表单
+      editIdInput.value = index;
+      document.getElementById('name').value = combination.name;
+      document.getElementById('category').value = combination.category;
+      document.getElementById('score').value = combination.score;
+      
+      // 填充成员
+      for (let i = 0; i < 6; i++) {
+        const memberInput = document.querySelector(`input[name="member${i+1}"]`);
+        memberInput.value = combination.members[i] || '';
+      }
+      
+      // 更改按钮文本
+      submitBtn.textContent = '更新役种';
+      cancelBtn.classList.remove('hidden');
+      
+      // 滚动到表单
+      document.querySelector('.lg\\:col-span-1').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // 取消编辑
+    function cancelEdit() {
+      combinationForm.reset();
+      editingId = null;
+      submitBtn.textContent = '添加役种';
+      cancelBtn.classList.add('hidden');
+    }
+    
+    // 处理表单提交
+    function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById('name').value.trim();
+      let category = document.getElementById('category').value.trim();
+      const customCategory = document.getElementById('custom-category').value.trim();
+      const score = parseInt(document.getElementById('score').value);
+      const adminPassword = document.getElementById('admin-password').value;
+      
+      // 如果选择了自定义分类，使用自定义分类的值
+      if (category === '自定义') {
+        if (!customCategory) {
+          showToast('请输入自定义分类名称', 'error');
+          return;
+        }
+        category = customCategory;
+        
+        // 将新的自定义分类添加到下拉选项中（避免重复）
+        const categorySelect = document.getElementById('category');
+        let optionExists = false;
+        
+        for (let i = 0; i < categorySelect.options.length; i++) {
+          if (categorySelect.options[i].value === category) {
+            optionExists = true;
+            break;
+          }
+        }
+        
+        if (!optionExists && categorySelect.options.length < 20) { // 限制最大选项数量
+          const newOption = document.createElement('option');
+          newOption.value = category;
+          newOption.textContent = category;
+          // 插入到"自定义"选项之前
+          categorySelect.insertBefore(newOption, categorySelect.lastElementChild);
+        }
+      }
+      
+      // 验证管理员密码
+      if (adminPassword !== 'aruai1351') {
+        showToast('管理员密码错误', 'error');
+        return;
+      }
+      
+      // 收集成员
+      const members = [];
+      const memberInputs = document.querySelectorAll('input[name^="member"]');
+      memberInputs.forEach(input => {
+        const memberValue = input.value.trim();
+        members.push(memberValue || '-');
+      });
+      
+      // 验证必填字段
+      if (!name || !category || isNaN(score) || score < 1) {
+        showToast('请填写所有必填字段', 'error');
+        return;
+      }
+      
+      // 验证至少有3个成员
+      const validMembers = members.filter(m => m !== '-');
+      if (validMembers.length < 3) {
+        showToast('至少需要3个成员', 'error');
+        return;
+      }
+      
+      const newCombination = {
+        name,
+        category,
+        score,
+        members
+      };
+      
+      if (editingId !== null) {
+        // 更新现有役种
+        const originalIndex = esMahjongData.findIndex(c => 
+          c.name === filteredData[editingId].name && 
+          c.category === filteredData[editingId].category
+        );
+        
+        if (originalIndex !== -1) {
+          esMahjongData[originalIndex] = newCombination;
+          filteredData[editingId] = newCombination;
+          showToast('役种更新成功');
+        }
+      } else {
+        // 添加新役种
+        esMahjongData.push(newCombination);
+        filteredData.push(newCombination);
+        showToast('役种添加成功');
+      }
+      
+      // 重置表单
+      combinationForm.reset();
+      editingId = null;
+      submitBtn.textContent = '添加役种';
+      cancelBtn.classList.add('hidden');
+      
+      // 更新表格
+      renderTable();
+      updatePagination();
+      
+      // 更新数据文件（在实际应用中，这里应该发送请求到服务器）
+      updateDataFile();
+    }
+    
+    // 显示删除模态框
+    function showDeleteModal(index) {
+      const combination = filteredData[index];
+      deleteName.textContent = combination.name;
+      confirmDeleteBtn.onclick = () => deleteCombination(index);
+      deleteModal.classList.remove('hidden');
+    }
+    
+    // 隐藏删除模态框
+    function hideDeleteModal() {
+      deleteModal.classList.add('hidden');
+    }
+    
+    // 确认删除
+    function deleteCombination(index) {
+      const combination = filteredData[index];
+      
+      // 从原始数据中删除
+      const originalIndex = esMahjongData.findIndex(c => 
+        c.name === combination.name && 
+        c.category === combination.category
+      );
+      
+      if (originalIndex !== -1) {
+        esMahjongData.splice(originalIndex, 1);
+      }
+      
+      // 从过滤后的数据中删除
+      filteredData.splice(index, 1);
+      
+      // 更新表格
+      if (filteredData.length === 0) {
+        currentPage = 1;
+      } else if (index === filteredData.length) {
+        currentPage = Math.max(1, currentPage - 1);
+      }
+      
+      renderTable();
+      updatePagination();
+      
+      // 隐藏模态框
+      hideDeleteModal();
+      
+      // 显示成功提示
+      showToast('役种删除成功');
+      
+      // 更新数据文件
+      updateDataFile();
+    }
+    
+    // 显示提示
+    function showToast(message, type = 'success') {
+      toastMessage.textContent = message;
+      
+      // 设置提示类型
+      if (type === 'error') {
+        toast.classList.remove('bg-success');
+        toast.classList.add('bg-danger');
+      } else {
+        toast.classList.remove('bg-danger');
+        toast.classList.add('bg-success');
+      }
+      
+      // 显示提示
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      
+      // 3秒后隐藏
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+    
+    // 导出数据
+    // 移除重复的exportData函数，避免与exportJSON函数冲突
+    
+    // 处理文件选择
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      
+      if (file) {
+        fileNameDisplay.textContent = file.name;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const importedData = JSON.parse(e.target.result);
+            
+            // 验证数据格式
+            if (!Array.isArray(importedData)) {
+              showToast('无效的数据格式', 'error');
+              return;
+            }
+            
+            // 验证每个对象的结构
+            const isValid = importedData.every(item => 
+              item.name && 
+              item.category && 
+              typeof item.score === 'number' && 
+              Array.isArray(item.members) && 
+              item.members.length === 6
+            );
+            
+            if (!isValid) {
+              showToast('数据格式不正确', 'error');
+              return;
+            }
+            
+            // 更新数据
+            esMahjongData.length = 0;
+            importedData.forEach(item => esMahjongData.push(item));
+            
+            filteredData = [...esMahjongData];
+            currentPage = 1;
+            
+            // 更新表格
+            renderTable();
+            updatePagination();
+            
+            // 更新数据文件
+            updateDataFile();
+            
+            showToast('数据导入成功');
+          } catch (error) {
+            showToast('导入失败：' + error.message, 'error');
+          }
+        };
+        
+        reader.readAsText(file);
+      } else {
+        fileNameDisplay.textContent = '未选择文件';
+      }
+    }
+    
+    // 更新数据文件（模拟）
+    function updateDataFile() {
+      // 在实际应用中，这里应该发送请求到服务器
+      console.log('数据已更新:', esMahjongData);
+      
+      // 这里我们只是模拟更新，实际上并没有修改文件
+      // 在真实环境中，你需要将数据发送到服务器进行保存
+    }
+  </script>
+
+</body>
+</html>
+
+      </div>
+    </div>
+
+    <!-- 添加役种区域 -->
+    <section class="bg-white rounded-xl shadow-md p-4 mb-8 w-3/4 mx-auto">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">添加新役种</h2>
+      <form id="add-combination-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="combination-name" class="block text-sm font-medium text-gray-700 mb-1">役种名称</label>
+            <input type="text" id="combination-name" required class="w-full px-6 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+          </div>
+          <div>
+            <label for="combination-category" class="block text-sm font-medium text-gray-700 mb-1">分类</label>
+            <select id="combination-category" required class="w-full px-6 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="洗牌">洗牌</option>
+              <option value="兄弟">兄弟</option>
+              <option value="队长">队长</option>
+              <option value="事务所代表">事务所代表</option>
+              <option value="宿舍">宿舍</option>
+              <option value="兴趣圈子">兴趣圈子</option>
+              <option value="愚人节">愚人节</option>
+              <option value="临时组合">临时组合</option>
+              <option value="双人组合">双人组合</option>
+              <option value="事务所Unit">事务所Unit</option>
+              <option value="特殊">特殊</option>
+            </select>
+          </div>
+          <div>
+            <label for="combination-score" class="block text-sm font-medium text-gray-700 mb-1">加分</label>
+            <input type="number" id="combination-score" min="1" max="99" required class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">成员 (每行一个成员，最多20个)</label>
+          <textarea id="combination-members" rows="5" placeholder="成员1&#10;成员2&#10;成员3&#10;..." class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+        </div>
+        
+        <div class="flex justify-end">
+          <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center">
+            <i class="fa fa-plus mr-2"></i> 添加役种
+          </button>
+        </div>
+      </form>
+    </section>
+    
+    <!-- 底部信息 -->
+    <footer class="text-center text-gray-500 text-sm mt-12">
+      <p>ES麻将役种数据库管理 © 2025</p>
+      <p>制作：xhs账号-yuovo；Github-Aruai</p>
+      <p>素材及规则来源：偶像梦幻祭2 & Happy elements K.K</p>
+      <p>特别鸣谢：麻友-喜欢涟纯的小黄老师提供的规则书整理</p>
+              <p>小红书-10378083769-对麻将入门玩法的翻译</p>
+    </footer>
+  </div>
+
+  <!-- 编辑模态框 -->
+  <div id="edit-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full mx-4 animate-slide-up">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">编辑役种</h2>
+        <button id="close-edit-modal" class="text-gray-500 hover:text-gray-700">
+          <i class="fa fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <form id="edit-combination-form" class="space-y-4">
+        <input type="hidden" id="edit-id">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="edit-name" class="block text-sm font-medium text-gray-700 mb-1">役种名称</label>
+            <input type="text" id="edit-name" required class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+          </div>
+          <div>
+            <label for="edit-category" class="block text-sm font-medium text-gray-700 mb-1">分类</label>
+            <select id="edit-category" required class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="洗牌">洗牌</option>
+              <option value="兄弟">兄弟</option>
+              <option value="队长">队长</option>
+              <option value="事务所代表">事务所代表</option>
+              <option value="宿舍">宿舍</option>
+              <option value="兴趣圈子">兴趣圈子</option>
+              <option value="愚人节">愚人节</option>
+              <option value="临时组合">临时组合</option>
+              <option value="双人组合">双人组合</option>
+              <option value="事务所Unit">事务所Unit</option>
+              <option value="特殊">特殊</option>
+            </select>
+          </div>
+          <div>
+            <label for="edit-score" class="block text-sm font-medium text-gray-700 mb-1">加分</label>
+            <input type="number" id="edit-score" min="1" max="99" required class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">成员 (每行一个成员，最多20个)</label>
+          <textarea id="edit-members" rows="5" placeholder="成员1&#10;成员2&#10;成员3&#10;..." class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button type="button" id="delete-combination-btn" class="bg-danger hover:bg-danger/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center">
+            <i class="fa fa-trash mr-2"></i> 删除役种
+          </button>
+          <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center">
+            <i class="fa fa-save mr-2"></i> 保存修改
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 确认删除模态框 -->
+  <div id="confirm-delete-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 animate-slide-up">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-danger/20 text-danger text-3xl mb-4">
+          <i class="fa fa-exclamation-triangle"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">确认删除</h2>
+        <p class="text-gray-600 mb-6">你确定要删除这个役种吗？此操作无法撤销。</p>
+        <div class="flex justify-center space-x-3">
+          <button id="cancel-delete-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-6 py-2 rounded-lg transition-all">
+            取消
+          </button>
+          <button id="confirm-delete-btn" class="bg-danger hover:bg-danger/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+            确认删除
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 密码验证模态框 -->
+  <div id="password-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 animate-slide-up">
+      <div class="text-center">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">管理员验证</h2>
+        <p class="text-gray-600 mb-6">请输入管理员密码以执行此操作</p>
+        <div class="mb-4">
+          <input type="password" id="admin-password" placeholder="输入密码" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+        </div>
+        <div id="password-error" class="text-danger text-sm mb-4 hidden">密码错误，请重试</div>
+        <div class="flex justify-center space-x-3">
+          <button id="cancel-password-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-6 py-2 rounded-lg transition-all">
+            取消
+          </button>
+          <button id="confirm-password-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局变量
+    let currentData = [...esMahjongData];
+    let currentEditIndex = -1;
+    let pendingOperation = null;
+    
+    // DOM元素
+    const dragArea = document.getElementById('drag-area');
+    const fileInput = document.getElementById('file-input');
+    const importMessage = document.getElementById('import-message');
+    const exportJsonBtn = document.getElementById('export-json-btn');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
+    const addCombinationForm = document.getElementById('add-combination-form');
+    const combinationsContainer = document.getElementById('combinations-container');
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const categoryFilter = document.getElementById('category-filter');
+    const editModal = document.getElementById('edit-modal');
+    const closeEditModal = document.getElementById('close-edit-modal');
+    const editCombinationForm = document.getElementById('edit-combination-form');
+    const deleteCombinationBtn = document.getElementById('delete-combination-btn');
+    const confirmDeleteModal = document.getElementById('confirm-delete-modal');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const passwordModal = document.getElementById('password-modal');
+    const adminPassword = document.getElementById('admin-password');
+    const passwordError = document.getElementById('password-error');
+    const cancelPasswordBtn = document.getElementById('cancel-password-btn');
+    const confirmPasswordBtn = document.getElementById('confirm-password-btn');
+    
+    // 管理员密码
+    const ADMIN_PASSWORD = 'aruai1351';
+    
+    // 设置拖放区域
+    function setupDragArea() {
+      // 拖放事件
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dragArea.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dragArea.addEventListener(eventName, highlight, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        dragArea.addEventListener(eventName, unhighlight, false);
+      });
+      
+      function highlight() {
+        dragArea.classList.add('active');
+      }
+      
+      function unhighlight() {
+        dragArea.classList.remove('active');
+      }
+      
+      // 处理拖放文件
+      dragArea.addEventListener('drop', handleDrop, false);
+      
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+          handleFiles(files[0]);
+        }
+      }
+      
+      // 文件选择事件
+      fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+          handleFiles(this.files[0]);
+        }
+      });
+    }
+    
+    // 处理文件
+    function handleFiles(file) {
+      // 检查文件扩展名
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      if (!['json', 'js'].includes(fileExtension)) {
+        showImportMessage('请选择JSON或JS格式的文件', 'error');
+        return;
+      }
+      
+      const reader = new FileReader();
+      
+      reader.onload = function(event) {
+        try {
+          let jsonData;
+          const fileExtension = file.name.split('.').pop().toLowerCase();
+          
+          if (fileExtension === 'json') {
+            // 处理JSON文件
+            jsonData = JSON.parse(event.target.result);
+          } else if (fileExtension === 'js') {
+            // 处理JS文件，尝试提取esMahjongData变量
+            const fileContent = event.target.result;
+            // 使用正则表达式匹配esMahjongData变量的定义
+            const dataMatch = fileContent.match(/esMahjongData\s*=\s*(\[.+?\])/s);
+            
+            if (!dataMatch || !dataMatch[1]) {
+              showImportMessage('在JS文件中未找到esMahjongData数组', 'error');
+              return;
+            }
+            
+            // 解析匹配到的JSON数据
+            jsonData = JSON.parse(dataMatch[1]);
+          }
+          
+          // 验证数据格式
+          if (!Array.isArray(jsonData)) {
+            showImportMessage('无效的数据格式，请确保文件包含数组格式的数据', 'error');
+            return;
+          }
+          
+          // 验证每个元素的格式
+          for (const item of jsonData) {
+            if (!item.name || !item.category || !item.score || !Array.isArray(item.members)) {
+              showImportMessage('数据格式不正确，每个役种必须包含name、category、score和members字段', 'error');
+              return;
+            }
+          }
+          
+          // 显示密码验证模态框
+          pendingOperation = {
+            type: 'import',
+            data: jsonData
+          };
+          showPasswordModal();
+        } catch (error) {
+          showImportMessage('解析JSON文件时出错: ' + error.message, 'error');
+        }
+      };
+      
+      reader.onerror = function() {
+        showImportMessage('读取文件时出错', 'error');
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // 显示导入消息
+    function showImportMessage(message, type) {
+      importMessage.textContent = message;
+      importMessage.className = 'mt-4';
+      
+      if (type === 'success') {
+        importMessage.classList.add('text-success');
+      } else if (type === 'error') {
+        importMessage.classList.add('text-danger');
+      }
+      
+      importMessage.classList.remove('hidden');
+      
+      // 3秒后隐藏消息
+      setTimeout(() => {
+        importMessage.classList.add('hidden');
+      }, 3000);
+    }
+    
+    // 导出JSON
+    function exportJSON() {
+      const dataStr = JSON.stringify(currentData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = 'es_mahjong_data.json';
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    }
+    
+    // 导出CSV
+function exportCSV() {
+  // 优先使用data.js中的esMahjongData变量
+  const dataToExport = window.esMahjongData || currentData || [];
+  
+  let csvContent = "data:text/csv;charset=utf-8,";
+  
+  // 添加标题行
+  csvContent += "名称,分类,加分,成员\n";
+  
+  // 添加数据行
+  dataToExport.forEach(combination => {
+    const members = combination.members.filter(m => m !== '-').join(';');
+    csvContent += `"${combination.name}","${combination.category}",${combination.score},"${members}"\n`;
+  });
+  
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "es_mahjong_data.csv");
+  document.body.appendChild(link);
+  
+  link.click();
+  document.body.removeChild(link);
+}
+    
+    // 添加新役种
+    function addCombination(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById('combination-name').value.trim();
+      const category = document.getElementById('combination-category').value;
+      const score = parseInt(document.getElementById('combination-score').value);
+      const membersText = document.getElementById('combination-members').value.trim();
+      
+      // 数据验证
+      if (!name) {
+        showImportMessage('请输入役种名称', 'error');
+        return;
+      }
+      
+      if (!score || score <= 0) {
+        showImportMessage('请输入有效的加分', 'error');
+        return;
+      }
+      
+      // 处理成员列表
+      let members = [];
+      if (membersText) {
+        members = membersText.split('\n')
+          .map(m => m.trim())
+          .filter(m => m.length > 0);
+      }
+      
+      // 确保成员数组长度为20，不足的用'-'填充
+      while (members.length < 20) {
+        members.push('-');
+      }
+      
+      // 创建新役种
+      const newCombination = {
+        category,
+        name,
+        score,
+        members
+      };
+      
+      // 同时更新currentData和esMahjongData，确保数据同步
+      currentData.push(newCombination);
+      
+      // 更新全局的esMahjongData变量，确保与data.js中的数据保持同步
+      if (window.esMahjongData) {
+        window.esMahjongData.push(newCombination);
+      }
+      
+      // 重置表单
+      addCombinationForm.reset();
+      
+      // 更新列表，确保新增役种立即显示
+      renderCombinations();
+      
+      // 显示成功消息
+      showImportMessage('役种添加成功并已显示在列表中', 'success');
+    }
+    
+    // 渲染役种列表
+    function renderCombinations() {
+      // 获取搜索关键词和分类筛选
+      const searchTerm = searchInput.value.toLowerCase();
+      const categoryValue = categoryFilter.value;
+      
+      // 筛选役种
+      let filteredCombinations = currentData;
+      
+      if (searchTerm) {
+        filteredCombinations = filteredCombinations.filter(combination => 
+          combination.name.toLowerCase().includes(searchTerm) ||
+          combination.members.some(member => 
+            member !== '-' && member.toLowerCase().includes(searchTerm)
+          )
+        );
+      }
+      
+      if (categoryValue !== 'all') {
+        filteredCombinations = filteredCombinations.filter(combination => 
+          combination.category === categoryValue
+        );
+      }
+      
+      // 按分类和名称排序
+      filteredCombinations.sort((a, b) => {
+        if (a.category !== b.category) {
+          return a.category.localeCompare(b.category);
+        }
+        return a.name.localeCompare(b.name);
+      });
+      
+      // 渲染列表
+      combinationsContainer.innerHTML = filteredCombinations.length > 0 
+        ? filteredCombinations.map((combination, index) => `
+            <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 card-hover">
+              <div class="flex justify-between items-center mb-3">
+                <div>
+                  <h3 class="text-lg font-bold text-gray-800">${combination.name}</h3>
+                  <div class="flex items-center mt-1">
+                    <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">${combination.category}</span>
+                    <span class="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs ml-2">+${combination.score}分</span>
+                  </div>
+                </div>
+                <button class="edit-btn bg-secondary/10 text-secondary hover:bg-secondary/20 px-3 py-1 rounded-lg transition-all" data-index="${index}">
+                  <i class="fa fa-pencil"></i> 编辑
+                </button>
+              </div>
+              
+              <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-2">成员列表:</h4>
+                <div class="flex flex-wrap">
+                  ${combination.members
+                    .filter(m => m !== '-')
+                    .map(member => `<span class="member-tag bg-neutral/20 text-neutral">${member}</span>`)
+                    .join('')}
+                </div>
+              </div>
+            </div>
+          `).join('')
+        : `<div class="text-center py-8 text-gray-500">没有找到匹配的役种</div>`;
+      
+      // 添加编辑按钮事件
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const index = parseInt(this.getAttribute('data-index'));
+          openEditModal(index);
+        });
+      });
+    }
+    
+    // 打开编辑模态框
+    function openEditModal(index) {
+      const combination = currentData[index];
+      currentEditIndex = index;
+      
+      document.getElementById('edit-id').value = index;
+      document.getElementById('edit-name').value = combination.name;
+      document.getElementById('edit-category').value = combination.category;
+      document.getElementById('edit-score').value = combination.score;
+      
+      // 处理成员列表
+      const members = combination.members.filter(m => m !== '-');
+      document.getElementById('edit-members').value = members.join('\n');
+      
+      editModal.classList.remove('hidden');
+    }
+    
+    // 关闭编辑模态框
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+      currentEditIndex = -1;
+    }
+    
+    // 更新役种
+    function updateCombination(event) {
+      event.preventDefault();
+      
+      if (currentEditIndex === -1) return;
+      
+      const name = document.getElementById('edit-name').value.trim();
+      const category = document.getElementById('edit-category').value;
+      const score = parseInt(document.getElementById('edit-score').value);
+      const membersText = document.getElementById('edit-members').value.trim();
+      
+      // 处理成员列表
+      let members = [];
+      if (membersText) {
+        members = membersText.split('\n')
+          .map(m => m.trim())
+          .filter(m => m.length > 0);
+      }
+      
+      // 确保成员数组长度为20，不足的用'-'填充
+      while (members.length < 20) {
+        members.push('-');
+      }
+      
+      // 更新役种
+      currentData[currentEditIndex] = {
+        category,
+        name,
+        score,
+        members
+      };
+      
+      // 关闭模态框
+      closeEditModal();
+      
+      // 更新列表
+      renderCombinations();
+      
+      // 显示成功消息
+      showImportMessage('役种更新成功', 'success');
+    }
+    
+    // 打开确认删除模态框
+    function openConfirmDeleteModal() {
+      confirmDeleteModal.classList.remove('hidden');
+    }
+    
+    // 关闭确认删除模态框
+    function closeConfirmDeleteModal() {
+      confirmDeleteModal.classList.add('hidden');
+    }
+    
+    // 删除役种
+    function deleteCombination() {
+      if (currentEditIndex === -1) return;
+      
+      // 删除役种
+      currentData.splice(currentEditIndex, 1);
+      
+      // 关闭模态框
+      closeConfirmDeleteModal();
+      closeEditModal();
+      
+      // 更新列表
+      renderCombinations();
+      
+      // 显示成功消息
+      showImportMessage('役种删除成功', 'success');
+    }
+    
+    // 显示密码验证模态框
+    function showPasswordModal() {
+      adminPassword.value = '';
+      passwordError.classList.add('hidden');
+      passwordModal.classList.remove('hidden');
+    }
+    
+    // 关闭密码验证模态框
+    function closePasswordModal() {
+      passwordModal.classList.add('hidden');
+      pendingOperation = null;
+    }
+    
+    // 验证密码
+    function verifyPassword() {
+      const password = adminPassword.value;
+      
+      if (password === ADMIN_PASSWORD) {
+        passwordError.classList.add('hidden');
+        passwordModal.classList.add('hidden');
+        
+        // 执行待处理的操作
+        if (pendingOperation) {
+          if (pendingOperation.type === 'import') {
+            currentData = pendingOperation.data;
+            renderCombinations();
+            showImportMessage('数据导入成功', 'success');
+          } else if (pendingOperation.type === 'delete') {
+            deleteCombination();
+          }
+          
+          pendingOperation = null;
+        }
+      } else {
+        passwordError.classList.remove('hidden');
+      }
+    }
+    
+    // 设置事件监听器
+    function setupEventListeners() {
+      // 导出按钮
+      exportJsonBtn.addEventListener('click', exportJSON);
+      exportCsvBtn.addEventListener('click', exportCSV);
+      
+      // 添加役种表单
+      addCombinationForm.addEventListener('submit', addCombination);
+      
+      // 搜索和筛选
+      searchBtn.addEventListener('click', renderCombinations);
+      searchInput.addEventListener('input', renderCombinations);
+      categoryFilter.addEventListener('change', renderCombinations);
+      
+      // 编辑模态框
+      closeEditModal.addEventListener('click', closeEditModal);
+      editCombinationForm.addEventListener('submit', updateCombination);
+      
+      // 删除相关
+      deleteCombinationBtn.addEventListener('click', function() {
+        pendingOperation = {
+          type: 'delete'
+        };
+        showPasswordModal();
+      });
+      
+      cancelDeleteBtn.addEventListener('click', closeConfirmDeleteModal);
+      confirmDeleteBtn.addEventListener('click', deleteCombination);
+      
+      // 密码验证
+      cancelPasswordBtn.addEventListener('click', closePasswordModal);
+      confirmPasswordBtn.addEventListener('click', verifyPassword);
+      
+      // 点击模态框外部关闭
+      window.addEventListener('click', function(event) {
+        if (event.target === editModal) {
+          closeEditModal();
+        }
+        if (event.target === confirmDeleteModal) {
+          closeConfirmDeleteModal();
+        }
+        if (event.target === passwordModal) {
+          closePasswordModal();
+        }
+      });
+    }
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 设置拖放区域
+      setupDragArea();
+      
+      // 设置事件监听器
+      setupEventListeners();
+      
+      // 渲染役种列表
+      renderCombinations();
+    });
+  </script>
+</body>
+</html>
