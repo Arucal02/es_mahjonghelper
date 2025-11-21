@@ -1,0 +1,39 @@
+{
+  "id": "/index.html", 
+  "name": "ES麻将胡牌助手",
+  "short_name": "ES麻将助手",
+  "description": "一个帮助用户查询和筛选ES麻将役种组合关系的Web应用，优化手牌策略",
+  "author": "Aruai",
+  "developer": {
+    "name": "Aruai",
+    "url": "http://localhost:8000"
+  },
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4a5568",
+  "icons": [
+    {
+      "src": "./es_mahjong_url.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./es_mahjong_yz.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "./es_mahjong_yz.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ],
+  "id": "/index.html",
+  "orientation": "portrait-primary",
+  "categories": ["entertainment", "utilities"]
+}
