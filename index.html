@@ -479,7 +479,7 @@
         
         // 定义事务所特殊单位和对应的团体LOGO
         const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
-        const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
+        const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights', 'DoubleFace'];
         
         // 检查事务所特殊单位规则
         let meetsOfficeRule = true;
@@ -758,7 +758,7 @@
     function generateRecommendedMembers(combinations) {
       // 定义事务所特殊单位和团体LOGO
       const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
-      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
+      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights', 'DoubleFace'];
       
       // 收集所有可能的成员
       const potentialMembers = new Set();
@@ -827,7 +827,7 @@
     function generateWinningSuggestion(combinations) {
       // 定义事务所特殊单位和团体LOGO
       const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
-      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
+      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights', 'DoubleFace'];
       
       // 找出所有已凑齐的役种
       const completedCombinations = combinations.filter(c => c.isCompleted);
@@ -1105,8 +1105,8 @@
     function findOptimalCombinations(combinations) {
       // 定义事务所特殊单位和对应的团体LOGO
       const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
-      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights'];
-      
+      const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights', 'DoubleFace'];
+    
       // 按加分高低排序
       const sortedCombinations = [...combinations].sort((a, b) => b.score - a.score);
       

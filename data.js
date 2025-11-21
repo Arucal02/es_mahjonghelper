@@ -520,7 +520,7 @@ const esMahjongData = [
     "category": "事务所Unit",
     "name": "STAR PRO-ALKALOID",
     "score": 6,
-    "members": ["STAR PRO", "ALKALOID", "天城一彩", "白鸟蓝良（爱拉）", "礼濑真宵（麻油）", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]
+    "members": ["STAR PRO", "ALKALOID", "天城一彩", "白鸟蓝良（爱拉）", "礼濑真宵（麻油）", "风早巽", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]
   },
  {
     "category": "事务所Unit",
@@ -537,7 +537,7 @@ const esMahjongData = [
  {
     "category": "事务所Unit",
     "name": "COS PRO-2wink",
-    "score": 6,
+    "score": 9,
     "members": ["COS PRO", "2wink", "葵日向", "葵裕太（yuta-吐舌）", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]
   },
  {
@@ -584,9 +584,15 @@ const esMahjongData = [
   },
  {
     "category": "事务所Unit",
+    "name": "NEW DI-DoubleFace",
+    "score": 9,
+    "members": ["NEW DI", "DoubleFace", "三毛缟斑（妈妈）", "樱河琥珀", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"] 
+  },
+  {
+    "category": "事务所Unit",
     "name": "NEW DI-MAM",
-    "score": 6,
-    "members": ["NEW DI", "MaM", "三毛缟斑（妈妈）", "樱河琥珀", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"]
+    "score": 12,
+    "members": ["NEW DI", "MAM", "三毛缟斑（妈妈）", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-"] 
   },
   {
     "category": "特殊",
