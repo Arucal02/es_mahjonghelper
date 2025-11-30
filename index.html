@@ -297,6 +297,8 @@
       selectedMembersList = selectedMembersList.filter(m => m !== member);
       renderSelectedMembers();
       console.log('已移除成员:', member);
+      // 自动触发搜索，更新推荐内容
+      search();
     }
     
     // 渲染已选成员标签
@@ -495,13 +497,21 @@
           meetsOfficeRule = false;
         }
         
+        // 判断是否为两人役种（总成员数为2）
+        const isTwoPersonCombination = validMembers.length === 2;
+        
+        // 两人役种完成条件：凑齐所有2个成员且符合事务所规则
+        // 其他役种完成条件：凑齐至少3个成员且符合事务所规则
+        const isCompleted = (isTwoPersonCombination ? completedMembers.length >= 2 : completedMembers.length >= 3) && meetsOfficeRule;
+        
         return {
           ...combination,
           completedMembers,
           pendingMembers,
           completedCount: completedMembers.length,
           totalMembers: validMembers.length,
-          isCompleted: completedMembers.length >= 3 && meetsOfficeRule // 仅需凑够其中的三张牌，且符合特殊规则
+          isCompleted: isCompleted,
+          isTwoPersonCombination: isTwoPersonCombination // 标记是否为两人役种
         };
       });
       
@@ -589,10 +599,10 @@
           combination.completedMembers.forEach(member => usedMembers.add(member));
         });
         
-        // 过滤出不包含已使用成员的其他已凑成役种
+        // 过滤出所有其他已完成役种（包括两人役），无论是否与最优组合成员重叠
+        // 但排除最优组合中已包含的役种
         const otherCompletedCombinations = allCompletedCombinations.filter(c => 
-          !optimalCombinations.some(oc => oc.name === c.name) &&
-          !c.completedMembers.some(member => usedMembers.has(member))
+          !optimalCombinations.some(oc => oc.name === c.name)
         );
         
         if (otherCompletedCombinations.length > 0) {
@@ -1096,7 +1106,56 @@
       
       // 检查是否达成胜利条件（3个不重复成员的役种）
       if (count >= 3) {
-        // 显示胜利提示（每个役种仅需凑够其中的三张牌，且役种间人员无重叠）
+        // 计算胡牌基础分数（3个非两人役种的总分）
+        const baseScore = optimalCombinations.reduce((sum, c) => sum + c.score, 0);
+        
+        // 计算两人役种的加分（所有已完成的两人役种的总分）
+        const twoPersonBonus = allCompletedCombinations
+          .filter(c => c.isTwoPersonCombination)
+          .reduce((sum, c) => sum + c.score, 0);
+        
+        // 计算总分数
+        const totalScore = baseScore + twoPersonBonus;
+        
+        // 更新胜利模态框的内容
+        const victoryContent = victoryModal.querySelector('.text-center');
+        victoryContent.innerHTML = `
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/20 text-success text-3xl mb-4">
+            <i class="fa fa-trophy"></i>
+          </div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-2">恭喜！</h2>
+          <p class="text-xl text-gray-600 mb-6">已达成胜利条件！</p>
+          <p class="text-gray-500 mb-6">你已成功凑齐 3 个役种（每个役种至少3人，且役种间人员无重叠）</p>
+          <div class="bg-gray-100 rounded-xl p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">得分详情</h3>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-gray-600">基础胡牌分数</span>
+              <span class="text-lg font-bold text-primary">${baseScore} 分</span>
+            </div>
+            ${twoPersonBonus > 0 ? `
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-gray-600">两人役种加分</span>
+              <span class="text-lg font-bold text-success">+${twoPersonBonus} 分</span>
+            </div>
+            <div class="border-t border-gray-300 my-3"></div>
+            ` : ''}
+            <div class="flex justify-between items-center">
+              <span class="text-gray-800 font-semibold">总分数</span>
+              <span class="text-2xl font-bold text-primary">${totalScore} 分</span>
+            </div>
+          </div>
+          <button id="close-victory-modal" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+            继续游戏
+          </button>
+        `;
+        
+        // 重新绑定关闭按钮事件
+        const closeBtn = document.getElementById('close-victory-modal');
+        closeBtn.addEventListener('click', function() {
+          victoryModal.classList.add('hidden');
+        });
+        
+        // 显示胜利提示
         victoryModal.classList.remove('hidden');
       }
     }
@@ -1106,9 +1165,52 @@
       // 定义事务所特殊单位和对应的团体LOGO
       const officeUnits = ['STAR PRO', 'NEW DIMENSION', 'COSMIC PRODUCTION', 'Rhythm Link（李子林）'];
       const groupLogos = ['Undead', 'ALKALOID', 'Crazy:B', 'Eden', 'fine', 'Valkyrie', '2wink', 'MaM', 'Switch', 'Knights', 'DoubleFace'];
-    
+      
+      // 筛选出非两人役种的已完成役种（两人役种不能直接参与胡牌）
+      const nonTwoPersonCombinations = combinations.filter(c => !c.isTwoPersonCombination);
+      
+      // 扩展大型役种（6人或以上）为多个小组
+      const expandedCombinations = [];
+      for (const combination of nonTwoPersonCombinations) {
+        // 使用役种定义的总成员数来判断是否需要分组
+        // 但事务所Unit类型的役种不能拆分，必须保持完整
+        if (combination.totalMembers >= 6 && combination.category !== '事务所Unit') {
+          // 获取役种定义的所有有效成员
+          const validMembers = combination.members.filter(m => m !== '-');
+          
+          // 拆分成多个3人小组（确保每个小组至少3人）
+          for (let i = 0; i < validMembers.length - 2; i += 3) {
+            const groupMembers = validMembers.slice(i, i + 3);
+            
+            // 检查当前小组有多少成员已被选择
+            const completedGroupMembers = groupMembers.filter(member => 
+              combination.completedMembers.includes(member)
+            );
+            
+            // 只有当小组中至少有1个成员被选择时才加入扩展列表
+            if (completedGroupMembers.length > 0) {
+              expandedCombinations.push({
+                ...combination,
+                name: `${combination.name} (组${Math.floor(i/3) + 1})`,
+                completedMembers: completedGroupMembers,
+                pendingMembers: groupMembers.filter(member => 
+                  !combination.completedMembers.includes(member)
+                ),
+                totalMembers: groupMembers.length,
+                // 小组完成条件：至少3个成员已被选择且符合事务所规则
+                isCompleted: completedGroupMembers.length >= 3 && 
+                            (combination.completedMembers.length >= 3 && 
+                             combination.isCompleted)
+              });
+            }
+          }
+        } else {
+          expandedCombinations.push(combination);
+        }
+      }
+
       // 按加分高低排序
-      const sortedCombinations = [...combinations].sort((a, b) => b.score - a.score);
+      const sortedCombinations = [...expandedCombinations].sort((a, b) => b.score - a.score);
       
       // 使用回溯算法寻找最优组合
       let bestCombination = [];
