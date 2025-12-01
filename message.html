@@ -350,7 +350,8 @@
                 console.log('生成新的用户标识:', userIdentifier);
             }
             
-            const messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [] };
+            // 初始化messages对象，确保包含general类型的留言数组
+            const messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [], general: [] };
             console.log('保存前的messages:', messages);
             const timestamp = new Date().toISOString();
             const message = {
@@ -375,6 +376,13 @@
             } else if (type === 'admin') {
                 messages.admin.push(message);
                 console.log('添加到admin类型的留言数组，现在数组长度:', messages.admin.length);
+            } else if (type === 'general') {
+                if (!messages.general) {
+                    messages.general = [];
+                    console.log('创建新的general类型留言数组');
+                }
+                messages.general.push(message);
+                console.log('添加到general类型的留言数组，现在数组长度:', messages.general.length);
             }
             
             localStorage.setItem('messages', JSON.stringify(messages));
@@ -492,13 +500,15 @@
             // 检查用户是否已经点赞
             const hasLiked = userLikes.includes(likeKey);
             
-            const messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [] };
+            const messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [], general: [] };
             let messageList = [];
             
             if (type === 'yaku' && yaku) {
                 messageList = messages.yaku[yaku] || [];
             } else if (type === 'admin') {
                 messageList = messages.admin || [];
+            } else if (type === 'general') {
+                messageList = messages.general || [];
             }
             
             const message = messageList.find(msg => msg.id === messageId);
@@ -648,8 +658,8 @@
                     // 6. 只有用户确认后，才执行删除操作
                     showConfirmDialog(confirmText, async () => {
                         try {
-                            // 使用localStorage删除留言
-                                const deleteResult = deleteMessageFromLocalStorage(type, yaku, messageId, targetMessage, messages);
+                            // 使用localStorage删除留言 - 不传递messages参数，确保函数从localStorage重新加载正确的数据结构
+                                const deleteResult = deleteMessageFromLocalStorage(type, yaku, messageId, targetMessage);
                                 
                                 if (deleteResult) {
                                     // 重新渲染留言列表
