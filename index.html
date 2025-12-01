@@ -7,7 +7,7 @@
   <!-- Tailwind CSS v3 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome -->
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
   <!-- 引入数据文件 -->
   <script src="data.js"></script>
   <!-- PWA相关标签 -->
@@ -104,7 +104,11 @@
           <i class="fa fa-info-circle mr-2"></i> 游戏规则
         </button>
         <!-- 占位元素保持标题居中 -->
-        <div class="w-[140px]"></div>
+        <div class="w-[140px] flex justify-end">
+          <a href="message.html" class="bg-transparent border-2 border-primary text-primary hover:bg-primary/10 font-medium px-4 py-2 rounded-lg transition-all flex items-center">
+            <i class="fa fa-comment-dots mr-2"></i> 留言
+          </a>
+        </div>
       </div>
       <div class="text-center">
         <div class="flex items-center justify-center mb-2">
@@ -112,15 +116,16 @@
           <h1 class="text-4xl font-bold text-gray-800">ES麻将役种查询助手</h1>
         </div>
         <p class="text-gray-600">帮助你快速查询和筛选角色之间的组合关系，优化手牌策略</p>
-         <p class="text-gray-600">使用方法：在搜索框内输入成员名称关键词-点击名称将其添加到手牌池（至少加入 1 人）-点击查询按钮</p>
-         <p class="text-gray-600">手牌更新时再次点击查询，即可获得新的手牌推荐</p>
         <p class="text-sm text-primary mt-2">胡牌条件：每个役种需凑够其中的三张牌且要凑齐三个役种，役种间人员无重叠</p>
       </div>
     </header>
 
     <!-- 输入区域 -->
     <section class="bg-white rounded-xl shadow-md p-6 mb-8">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">选择成员</h2>
+      <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fa fa-users mr-3 text-primary"></i>
+        选择成员
+      </h2>
       <div class="relative">
         <div class="flex items-end">
           <div class="relative flex-1">
@@ -130,8 +135,8 @@
             </button>
             <div id="suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto scrollbar-hide hidden"></div>
           </div>
-          <button id="search-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center justify-center ml-2">
-            <i class="fa fa-search mr-2"></i> 查询
+          <button id="usage-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center justify-center ml-2">
+            <i class="fa fa-book mr-2"></i> 使用说明
           </button>
         </div>
       </div>
@@ -154,6 +159,107 @@
       </button>
     </div>
 
+    <!-- 使用说明模态框 -->
+    <div id="usage-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-primary text-white p-6 rounded-t-xl">
+          <div class="flex items-center justify-between">
+            <h3 class="text-2xl font-bold">ES麻将役种查询助手 - 使用说明</h3>
+            <button id="close-usage-modal" class="text-white hover:text-gray-200 text-2xl">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="p-6">
+          <div class="mb-6">
+            <h4 class="text-xl font-semibold text-gray-800 mb-3">功能介绍</h4>
+            <p class="text-gray-600 mb-4">本工具帮助你快速查询和筛选角色之间的组合关系，优化手牌策略，找到最佳的胡牌方案。</p>
+            <p class="text-gray-600 mb-4">软件采用实时更新机制，当你添加或移除成员时，会自动更新推荐内容，无需手动点击查询按钮。</p>
+          </div>
+          
+          <div class="mb-6">
+            <h4 class="text-xl font-semibold text-gray-800 mb-3">使用步骤</h4>
+            <ol class="list-decimal list-inside space-y-3 text-gray-600">
+              <li>在搜索框内输入成员名称关键词（如"天城"、"燐音"等）</li>
+              <li>从下拉建议列表中点击成员名称，将其添加到手牌池</li>
+              <li>重复上述步骤，添加至少1名成员（建议添加2-4名成员以获得更准确的推荐）</li>
+              <li>系统会自动分析并显示推荐的役种组合和胡牌建议</li>
+              <li>你可以点击"模拟替换"按钮来尝试不同的成员组合</li>
+              <li>如需重新开始，可以点击"清除所有"按钮</li>
+            </ol>
+          </div>
+          
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
+            <h4 class="text-lg font-semibold text-green-800 mb-2">小技巧</h4>
+            <p class="text-gray-600">如果不知道该选什么成员，可以先选择一个完整的役种，然后再根据推荐进行调整。这样更容易找到高分的胡牌组合！</p>
+          </div>
+          
+          <div class="mb-6">
+            <h4 class="text-xl font-semibold text-gray-800 mb-3">胡牌规则</h4>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <p class="text-gray-600 mb-2"><strong>基本条件：</strong>需要凑齐三个不同的役种，且每个役种需凑够其中的三张牌。</p>
+              <p class="text-gray-600 mb-2"><strong>重要规则：</strong>役种间人员无重叠，即同一个成员不能同时出现在两个不同的役种中。</p>
+              <p class="text-gray-600 mb-2"><strong>事务所规则：</strong>如果役种包含事务所特殊单位（如STAR PRO、NEW DIMENSION等），则必须同时包含对应的团体LOGO（如Undead、Eden等）。</p>
+            </div>
+          </div>
+          
+          <div class="mb-6">
+            <h4 class="text-xl font-semibold text-gray-800 mb-3">注意事项</h4>
+            <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <li>请确保输入的角色名称与数据库中的格式一致，例如"天城燐音"而非"天城磷音"</li>
+              <li>输入事务所牌英文时需要使用大写，如"STAR PRO"</li>
+              <li>建议从已有的役种中选择成员，这样更容易凑齐完整的役种组合</li>
+              <li>每个役种至少需要3名成员才能完成，某些役种可能需要更多成员</li>
+            </ul>
+          </div>
+          
+          <div class="mb-6">
+            <h4 class="text-xl font-semibold text-gray-800 mb-3">功能详解</h4>
+            <div class="space-y-4">
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">①推荐役种</h5>
+                <p class="text-gray-600">根据你已选的成员，系统会推荐最容易达成的役种组合和最高分数的役种组合。</p>
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">②凑牌建议</h5>
+                <p class="text-gray-600">显示所有包含你已选成员的役种，并标记每个役种的完成进度和所需成员。</p>
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">③胜利进度</h5>
+                <p class="text-gray-600">实时显示你已凑齐的役种数量和胡牌进度，帮助你了解距离胜利还有多远。</p>
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">④胡牌数据统计</h5>
+                <p class="text-gray-600">系统会自动记录你的总胡牌次数和各个役种的胡牌次数，这些统计数据可以在数据库管理页面中查看，帮助你了解自己的游戏偏好和擅长的役种组合。</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-6">
+            <h4 class="text-xl font-semibold text-gray-800 mb-3">留言功能</h4>
+            <div class="space-y-4">
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">①访问留言页面</h5>
+                <p class="text-gray-600">点击页面顶部的"留言"按钮，即可进入ES人际关系留言页面。</p>
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">②留言用途</h5>
+                <p class="text-gray-600">留言功能旨在汇总大家吃过的"香香饭"，帮助萌新快速了解某一小偶像/组合/团体。</p>
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">③留言规则</h5>
+                <p class="text-gray-600">禁止在留言区内留下不友善、引战、ES无关、涉及人身攻击等一系列发言，如经发现会进行删除处理。请遵守社区规范，共同维护良好的交流环境。</p>
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-800 mb-1">④删除功能</h5>
+                <p class="text-gray-600">点击留言下方的删除按钮（垃圾桶图标）时，系统会弹出二次确认对话框，确认后才会执行删除操作，避免误操作。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 推荐搭配区域 -->
     <section id="recommendation-section" class="mb-8 hidden">
       <div class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl shadow-md p-6 animate-fade-in">
@@ -162,7 +268,10 @@
             <i class="fa fa-lightbulb-o text-xl"></i>
           </div>
           <div class="w-full">
-            <h2 class="text-xl font-bold text-gray-800 mb-2">推荐役种</h2>
+            <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+              <i class="fa fa-thumbs-up mr-3 text-primary"></i>
+              推荐役种
+            </h2>
             
             <!-- 已凑成的配队 -->
             <div id="completed-teams" class="mb-6 hidden">
@@ -188,7 +297,10 @@
 
     <!-- 凑牌建议列表 -->
     <section id="results-section" class="mb-8 hidden">
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">凑牌建议</h2>
+      <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fa fa-lightbulb-o mr-3 text-primary"></i>
+        凑牌建议
+      </h2>
       <div id="results-container" class="space-y-4"></div>
     </section>
 
@@ -196,7 +308,10 @@
     <section id="progress-section" class="bg-white rounded-xl shadow-md p-6 mb-8 hidden">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-xl font-bold text-gray-800">胜利进度</h2>
+          <h2 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fa fa-trophy mr-3 text-primary"></i>
+            胜利进度
+          </h2>
           <p class="text-gray-600">已凑齐 <span id="completed-count" class="font-bold text-success">0</span> / 3 个役种（每个役种至少3人，且役种间人员无重叠）</p>
         </div>
         <div class="w-32 h-32 relative">
@@ -249,12 +364,15 @@
     // 全局变量
     let allMembers = new Set();
     let selectedMembersList = [];
+    let historyStates = []; // 保存历史状态，用于撤销功能
     
     // DOM元素
     const memberInput = document.getElementById('member-input');
     const suggestions = document.getElementById('suggestions');
     const addMemberBtn = document.getElementById('add-member-btn');
-    const searchBtn = document.getElementById('search-btn');
+    const usageBtn = document.getElementById('usage-btn');
+    const usageModal = document.getElementById('usage-modal');
+    const closeUsageModal = document.getElementById('close-usage-modal');
     const clearBtn = document.getElementById('clear-btn');
     const selectedMembers = document.getElementById('selected-members');
     const resultsSection = document.getElementById('results-section');
@@ -299,6 +417,64 @@
       console.log('已移除成员:', member);
       // 自动触发搜索，更新推荐内容
       search();
+    }
+    
+    // HTML转义函数，防止特殊字符导致的语法错误
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    
+    // 一键应用胡牌建议
+    function applyWinningSuggestion(removeMembers, addMembers) {
+      console.log('应用胡牌建议:', removeMembers, addMembers);
+      
+      // 保存当前状态到历史记录
+      historyStates.push([...selectedMembersList]);
+      
+      // 先移除所有建议的成员
+      removeMembers.forEach(member => {
+        removeMember(member);
+      });
+      
+      // 然后添加所有建议的成员
+      addMembers.forEach(member => {
+        addMember(member);
+      });
+      
+      // 自动触发搜索，更新推荐内容
+      search();
+      
+      // 显示撤销按钮
+      const undoBtn = document.getElementById('undo-button');
+      if (undoBtn) {
+        undoBtn.classList.remove('hidden');
+      }
+    }
+    
+    // 撤销上一次操作的函数
+    function undoLastOperation() {
+      if (historyStates.length > 0) {
+        // 恢复上一个状态
+        selectedMembersList = historyStates.pop();
+        
+        // 重新渲染已选成员
+        renderSelectedMembers();
+        
+        // 自动触发搜索，更新推荐内容
+        search();
+        
+        // 如果没有历史记录了，隐藏撤销按钮
+        const undoBtn = document.getElementById('undo-button');
+        if (undoBtn && historyStates.length === 0) {
+          undoBtn.classList.add('hidden');
+        }
+      }
     }
     
     // 渲染已选成员标签
@@ -437,15 +613,36 @@
     
     // 设置事件监听器
     function setupEventListeners() {
-      searchBtn.addEventListener('click', search);
+      // 使用说明按钮事件
+      usageBtn.addEventListener('click', function() {
+        usageModal.classList.remove('hidden');
+      });
+      
+      // 关闭使用说明模态框
+      closeUsageModal.addEventListener('click', function() {
+        usageModal.classList.add('hidden');
+      });
+      
+      // 点击模态框外部关闭
+      usageModal.addEventListener('click', function(e) {
+        if (e.target === usageModal) {
+          usageModal.classList.add('hidden');
+        }
+      });
       
       // 清除按钮事件
       clearBtn.addEventListener('click', function() {
         selectedMembersList = [];
+        historyStates = []; // 清空历史记录
         renderSelectedMembers();
         resultsSection.classList.add('hidden');
         progressSection.classList.add('hidden');
         document.getElementById('recommendation-section').classList.add('hidden');
+        // 隐藏撤销按钮
+        const undoBtn = document.getElementById('undo-button');
+        if (undoBtn) {
+          undoBtn.classList.add('hidden');
+        }
       });
       
       // 关闭胜利模态框
@@ -565,7 +762,7 @@
             <div class="bg-gradient-to-r from-success/10 to-success/5 rounded-lg p-4 border border-success/30 mb-4">
               <div class="flex justify-between items-center mb-3">
                 <h4 class="font-medium text-success flex items-center">
-                  <i class="fa fa-star mr-2"></i> 最佳组合
+                  <i class="fa fa-star mr-2"></i> 主要胡牌役
                 </h4>
                 <span class="text-xs bg-success/20 text-success px-2 py-1 rounded-full">
                   总分: ${optimalCombinations.reduce((sum, c) => sum + c.score, 0)}
@@ -575,7 +772,7 @@
                 ${optimalCombinations.map(combination => `
                   <div class="bg-white/70 rounded-lg p-3 border border-success/20">
                     <div class="flex justify-between items-center mb-2">
-                      <h5 class="font-medium text-success">${combination.name}</h5>
+                      <h5 class="font-medium text-success">${combination.groupName || combination.name}</h5>
                       <span class="text-xs bg-success/20 text-success px-2 py-1 rounded-full">
                         ${combination.category} | ${combination.score}分
                       </span>
@@ -592,15 +789,15 @@
           `;
         }
         
-        // 渲染其他已凑成的役种（排除最优组合中已包含的和成员重复的）
-        // 收集最优组合中已使用的成员
+        // 渲染其他已凑成的役种（加分役，排除主要胡牌役中已包含的）
+        // 收集主要胡牌役中已使用的成员
         const usedMembers = new Set();
         optimalCombinations.forEach(combination => {
           combination.completedMembers.forEach(member => usedMembers.add(member));
         });
         
-        // 过滤出所有其他已完成役种（包括两人役），无论是否与最优组合成员重叠
-        // 但排除最优组合中已包含的役种
+        // 过滤出所有其他已完成役种（加分役，包括两人役），无论是否与主要胡牌役成员重叠
+        // 但排除主要胡牌役中已包含的役种
         const otherCompletedCombinations = allCompletedCombinations.filter(c => 
           !optimalCombinations.some(oc => oc.name === c.name)
         );
@@ -645,64 +842,220 @@
           const winningSuggestion = generateWinningSuggestion(combinations);
           
           if (winningSuggestion) {
-            winningSuggestionsContent.innerHTML = `
-              <div class="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/30">
-                <div class="flex items-center mb-3">
-                  <div class="bg-primary/20 text-primary p-2 rounded-full mr-3">
-                    <i class="fa fa-exchange"></i>
-                  </div>
-                  <h4 class="font-medium text-primary">替换建议</h4>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <p class="text-sm text-gray-600 mb-1">建议移除:</p>
-                    <div class="flex flex-wrap">
-                      ${winningSuggestion.removeMembers.map(member => `
-                        <span class="bg-danger/10 text-danger px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-danger/20 transition-colors">
-                          ${member}
-                          <i class="fa fa-times-circle ml-1" onclick="removeMember('${member}');search();"></i>
-                        </span>
-                      `).join('')}
-                    </div>
-                  </div>
-                  <div>
-                    <p class="text-sm text-gray-600 mb-1">建议抓取:</p>
-                    <div class="flex flex-wrap">
-                      ${winningSuggestion.addMembers.map(member => `
-                        <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-success/20 transition-colors">
-                          ${member}
-                          <i class="fa fa-plus-circle ml-1" onclick="addMember('${member}');search();"></i>
-                        </span>
-                      `).join('')}
-                    </div>
-                  </div>
-                  ${winningSuggestion.newlyCompletedCombination ? `
-                  <div class="bg-success/10 p-3 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-2">替换后可达成的役种:</p>
-                    <div class="bg-white/80 p-2 rounded-lg border border-success/20">
-                      <div class="flex justify-between items-center mb-1">
-                        <span class="font-medium text-success">${winningSuggestion.newlyCompletedCombination.name}</span>
-                        <span class="bg-success/20 text-success px-2 py-0.5 rounded-full text-xs">+${winningSuggestion.newlyCompletedCombination.score}分</span>
+            // 检查是否有两套方案
+            const hasTwoSuggestions = winningSuggestion.optimal && winningSuggestion.highScore;
+            
+            if (hasTwoSuggestions) {
+              // 渲染两套方案
+              winningSuggestionsContent.innerHTML = `
+                <!-- 最优组合方案 -->
+                <div class="mb-4">
+                  <div class="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/30">
+                    <div class="flex items-center mb-3">
+                      <div class="bg-primary/20 text-primary p-2 rounded-full mr-3">
+                        <i class="fa fa-exchange"></i>
                       </div>
+                      <h4 class="font-medium text-primary">💡 最优组合 (更容易达成)</h4>
+                    </div>
+                    <div class="space-y-3">
+                      <div>
+                        <p class="text-sm text-gray-600 mb-1">建议移除:</p>
+                        <div class="flex flex-wrap">
+                          ${winningSuggestion.optimal.removeMembers.map(member => `
+                            <span class="bg-danger/10 text-danger px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-danger/20 transition-colors">
+                              ${escapeHtml(member)}
+                              <i class="fa fa-times-circle ml-1" onclick="removeMember('${member.replace(/'/g, "\\'")}');search();"></i>
+                            </span>
+                          `).join('')}
+                        </div>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-600 mb-1">建议抓取:</p>
+                        <div class="flex flex-wrap">
+                          ${winningSuggestion.optimal.addMembers.map(member => `
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-success/20 transition-colors">
+                              ${escapeHtml(member)}
+                              <i class="fa fa-plus-circle ml-1" onclick="addMember('${member.replace(/'/g, "\\'")}');search();"></i>
+                            </span>
+                          `).join('')}
+                        </div>
+                      </div>
+                      ${winningSuggestion.optimal.newlyCompletedCombination ? `
+                      <div class="bg-success/10 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-2">替换后可达成的役种:</p>
+                        <div class="bg-white/80 p-2 rounded-lg border border-success/20">
+                          <div class="flex justify-between items-center mb-1">
+                            <span class="font-medium text-success">${escapeHtml(winningSuggestion.optimal.newlyCompletedCombination.name)}</span>
+                            <span class="bg-success/20 text-success px-2 py-0.5 rounded-full text-xs">+${winningSuggestion.optimal.newlyCompletedCombination.score}分</span>
+                          </div>
+                          <div class="flex flex-wrap">
+                            ${winningSuggestion.optimal.newlyCompletedCombination.completedMembers.map(member => `
+                              <span class="bg-success/10 text-success px-1.5 py-0.5 rounded-full text-xs mr-1 mb-1">
+                                ${escapeHtml(member)}
+                              </span>
+                            `).join('')}
+                          </div>
+                        </div>
+                      </div>
+                      ` : ''}
+                      <div class="mt-3 flex space-x-2">
+                        <button onclick="applyWinningSuggestion([${winningSuggestion.optimal.removeMembers.map(member => `'${member.replace(/'/g, "\\'")}'`).join(', ')}], [${winningSuggestion.optimal.addMembers.map(member => `'${member.replace(/'/g, "\\'")}'`).join(', ')}])" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors text-sm">
+          <i class="fa fa-check-circle mr-1"></i>模拟替换
+        </button>
+                        <button id="undo-button" onclick="undoLastOperation()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors text-sm hidden">
+                          <i class="fa fa-undo mr-1"></i>撤销
+                        </button>
+                      </div>
+                      <p class="text-sm text-gray-500 mt-2">
+                          ${winningSuggestion.optimal.replaceCombination ? 
+                            `替换「${escapeHtml(winningSuggestion.optimal.replaceCombination)}」后可达成 ` : 
+                            '替换后可达成 '}
+                          <span class="font-medium text-primary">${winningSuggestion.optimal.newScore}</span> 分的胡牌组合 (本次需调整 ${winningSuggestion.optimal.adjustmentsNeeded || 1} 张手牌，建议模拟替换查看详情)
+                        </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 高分组合方案 -->
+                <div>
+                  <div class="bg-gradient-to-r from-secondary/10 to-secondary/5 rounded-lg p-4 border border-secondary/30">
+                    <div class="flex items-center mb-3">
+                      <div class="bg-secondary/20 text-secondary p-2 rounded-full mr-3">
+                        <i class="fa fa-exchange"></i>
+                      </div>
+                      <h4 class="font-medium text-secondary">🎯 高分组合 (更高分数)</h4>
+                    </div>
+                    <div class="space-y-3">
+                      <div>
+                        <p class="text-sm text-gray-600 mb-1">建议移除:</p>
+                        <div class="flex flex-wrap">
+                          ${winningSuggestion.highScore.removeMembers.map(member => `
+                            <span class="bg-danger/10 text-danger px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-danger/20 transition-colors">
+                              ${escapeHtml(member)}
+                              <i class="fa fa-times-circle ml-1" onclick="removeMember('${member.replace(/'/g, "\\'")}');search();"></i>
+                            </span>
+                          `).join('')}
+                        </div>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-600 mb-1">建议抓取:</p>
+                        <div class="flex flex-wrap">
+                          ${winningSuggestion.highScore.addMembers.map(member => `
+                            <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-success/20 transition-colors">
+                              ${escapeHtml(member)}
+                              <i class="fa fa-plus-circle ml-1" onclick="addMember('${member.replace(/'/g, "\\'")}');search();"></i>
+                            </span>
+                          `).join('')}
+                        </div>
+                      </div>
+                      ${winningSuggestion.highScore.newlyCompletedCombination ? `
+                      <div class="bg-success/10 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600 mb-2">替换后可达成的役种:</p>
+                        <div class="bg-white/80 p-2 rounded-lg border border-success/20">
+                          <div class="flex justify-between items-center mb-1">
+                            <span class="font-medium text-success">${escapeHtml(winningSuggestion.highScore.newlyCompletedCombination.name)}</span>
+                            <span class="bg-success/20 text-success px-2 py-0.5 rounded-full text-xs">+${winningSuggestion.highScore.newlyCompletedCombination.score}分</span>
+                          </div>
+                          <div class="flex flex-wrap">
+                            ${winningSuggestion.highScore.newlyCompletedCombination.completedMembers.map(member => `
+                              <span class="bg-success/10 text-success px-1.5 py-0.5 rounded-full text-xs mr-1 mb-1">
+                                ${escapeHtml(member)}
+                              </span>
+                            `).join('')}
+                          </div>
+                        </div>
+                      </div>
+                      ` : ''}
+                      <div class="mt-3 flex space-x-2">
+                        <button onclick="applyWinningSuggestion([${winningSuggestion.highScore.removeMembers.map(member => `'${member.replace(/'/g, "\\'")}'`).join(', ')}], [${winningSuggestion.highScore.addMembers.map(member => `'${member.replace(/'/g, "\\'")}'`).join(', ')}])" class="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-secondary/90 transition-colors text-sm">
+          <i class="fa fa-check-circle mr-1"></i>模拟替换
+        </button>
+                        <button id="undo-button" onclick="undoLastOperation()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors text-sm hidden">
+                          <i class="fa fa-undo mr-1"></i>撤销
+                        </button>
+                      </div>
+                      <p class="text-sm text-gray-500 mt-2">
+                          ${winningSuggestion.highScore.replaceCombination ? 
+                            `替换「${escapeHtml(winningSuggestion.highScore.replaceCombination)}」后可达成 ` : 
+                            '替换后可达成 '}
+                          <span class="font-medium text-secondary">${winningSuggestion.highScore.newScore}</span> 分的胡牌组合 (本次需调整 ${winningSuggestion.highScore.adjustmentsNeeded || 1} 张手牌，建议模拟替换查看详情)
+                        </p>
+                    </div>
+                  </div>
+                </div>
+              `;
+            } else {
+              // 只有一套方案，按原来的方式渲染
+              const suggestion = winningSuggestion.optimal || winningSuggestion.highScore || winningSuggestion;
+              
+              winningSuggestionsContent.innerHTML = `
+                <div class="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/30">
+                  <div class="flex items-center mb-3">
+                    <div class="bg-primary/20 text-primary p-2 rounded-full mr-3">
+                      <i class="fa fa-exchange"></i>
+                    </div>
+                    <h4 class="font-medium text-primary">替换建议</h4>
+                  </div>
+                  <div class="space-y-3">
+                    <div>
+                      <p class="text-sm text-gray-600 mb-1">建议移除:</p>
                       <div class="flex flex-wrap">
-                        ${winningSuggestion.newlyCompletedCombination.completedMembers.map(member => `
-                          <span class="bg-success/10 text-success px-1.5 py-0.5 rounded-full text-xs mr-1 mb-1">
-                            ${member}
+                        ${suggestion.removeMembers.map(member => `
+                          <span class="bg-danger/10 text-danger px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-danger/20 transition-colors">
+                            ${escapeHtml(member)}
+                            <i class="fa fa-times-circle ml-1" onclick="removeMember('${member.replace(/'/g, "\\'")}');search();"></i>
                           </span>
                         `).join('')}
                       </div>
                     </div>
+                    <div>
+                      <p class="text-sm text-gray-600 mb-1">建议抓取:</p>
+                      <div class="flex flex-wrap">
+                        ${suggestion.addMembers.map(member => `
+                          <span class="bg-success/10 text-success px-2 py-1 rounded-full text-xs mr-1 mb-1 flex items-center cursor-pointer hover:bg-success/20 transition-colors">
+                            ${escapeHtml(member)}
+                            <i class="fa fa-plus-circle ml-1" onclick="addMember('${member.replace(/'/g, "\\'")}');search();"></i>
+                          </span>
+                        `).join('')}
+                      </div>
+                    </div>
+                    ${suggestion.newlyCompletedCombination ? `
+                    <div class="bg-success/10 p-3 rounded-lg">
+                      <p class="text-sm text-gray-600 mb-2">替换后可达成的役种:</p>
+                      <div class="bg-white/80 p-2 rounded-lg border border-success/20">
+                        <div class="flex justify-between items-center mb-1">
+                          <span class="font-medium text-success">${escapeHtml(suggestion.newlyCompletedCombination.name)}</span>
+                          <span class="bg-success/20 text-success px-2 py-0.5 rounded-full text-xs">+${suggestion.newlyCompletedCombination.score}分</span>
+                        </div>
+                        <div class="flex flex-wrap">
+                          ${suggestion.newlyCompletedCombination.completedMembers.map(member => `
+                            <span class="bg-success/10 text-success px-1.5 py-0.5 rounded-full text-xs mr-1 mb-1">
+                              ${escapeHtml(member)}
+                            </span>
+                          `).join('')}
+                        </div>
+                      </div>
+                    </div>
+                    ` : ''}
+                    <div class="mt-3 flex space-x-2">
+                      <button onclick="applyWinningSuggestion([${suggestion.removeMembers.map(member => `'${member.replace(/'/g, "\\'")}'`).join(', ')}], [${suggestion.addMembers.map(member => `'${member.replace(/'/g, "\\'")}'`).join(', ')}])" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors text-sm">
+          <i class="fa fa-check-circle mr-1"></i>模拟替换
+        </button>
+                      <button id="undo-button" onclick="undoLastOperation()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors text-sm hidden">
+                        <i class="fa fa-undo mr-1"></i>撤销
+                      </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        ${suggestion.replaceCombination ? 
+                          `替换「${escapeHtml(suggestion.replaceCombination)}」后可达成 ` : 
+                          '替换后可达成 '}
+                        <span class="font-medium text-primary">${suggestion.newScore}</span> 分的胡牌组合 (本次需调整 ${suggestion.adjustmentsNeeded || 1} 张手牌，建议模拟替换查看详情)
+                      </p>
                   </div>
-                  ` : ''}
-                  <p class="text-sm text-gray-500 mt-2">
-                      ${winningSuggestion.replaceCombination ? 
-                        `替换「${winningSuggestion.replaceCombination}」后可达成 ` : 
-                        '替换后可达成 '}
-                      <span class="font-medium text-primary">${winningSuggestion.newScore}</span> 分的胡牌组合
-                    </p>
                 </div>
-              </div>
-            `;
+              `;
+            }
+            
             winningSuggestions.classList.remove('hidden');
           } else {
             winningSuggestions.classList.add('hidden');
@@ -787,8 +1140,8 @@
         const memberCombinations = [];
         
         combinations.forEach(combination => {
-          // 如果成员可以帮助完成这个役种
-          if (combination.pendingMembers.includes(member) && combination.completedCount >= 2) {
+          // 如果成员可以帮助完成这个役种，且役种尚未完成
+          if (combination.pendingMembers.includes(member) && combination.completedCount >= 2 && !combination.isCompleted) {
             // 检查是否符合事务所特殊单位规则
             let meetsOfficeRule = true;
             
@@ -859,12 +1212,13 @@
       // 生成所有可能的目标胡牌方案
       const potentialTargets = [];
       
-      // 1. 找出所有可以通过添加1-2个成员完成的高分役种
-      const highScoreCombinations = combinations
-        .filter(c => !c.isCompleted && c.score > 5)
+      // 1. 找出所有可以通过添加成员完成的役种，包括高分和低分
+      // 优先考虑高分役种，但也不排除低分役种
+      const allPossibleCombinations = combinations
+        .filter(c => !c.isCompleted && !c.isTwoPersonCombination)  // 排除两人役种
         .sort((a, b) => b.score - a.score);
       
-      for (const combination of highScoreCombinations) {
+      for (const combination of allPossibleCombinations) {
         // 检查是否与已凑齐役种有成员重叠
         const hasOverlap = combination.completedMembers.some(m => usedMembers.has(m));
         
@@ -876,8 +1230,8 @@
           !selectedMembersList.includes(m) && (!hasOverlap || !usedMembers.has(m))
         );
         
-        // 只考虑需要添加1-2个成员的情况
-        if (neededMembers.length > 0 && neededMembers.length <= 2) {
+        // 考虑需要添加1-3个成员的情况，或者需要替换成员的情况
+        if ((neededMembers.length > 0 && neededMembers.length <= 3) || hasOverlap) {
           // 计算完成这个役种后的潜在分数
           let potentialScore = currentScore;
           if (hasOverlap) {
@@ -904,74 +1258,146 @@
               neededMembers: neededMembers,
               potentialScore: potentialScore,
               overlapWithExisting: hasOverlap,
-              existingMembers: existingMembers
+              existingMembers: existingMembers,
+              // 计算完成难度：需要添加的成员数量
+              difficulty: neededMembers.length
             });
           }
         }
       }
       
-      // 按潜在分数降序排序
+      // 如果没有找到足够的高分役种目标，添加低分役种目标
+      if (potentialTargets.length < 3) {
+        const lowScoreCombinations = combinations
+          .filter(c => !c.isCompleted && !c.isTwoPersonCombination && c.score <= 5)
+          .sort((a, b) => b.score - a.score);
+        
+        for (const combination of lowScoreCombinations) {
+          // 检查是否与已凑齐役种有成员重叠
+          const hasOverlap = combination.completedMembers.some(m => usedMembers.has(m));
+          
+          // 计算当前役种中已有的成员
+          const existingMembers = combination.completedMembers.filter(m => selectedMembersList.includes(m));
+          
+          // 计算还需要添加的成员
+          const neededMembers = combination.pendingMembers.filter(m => 
+            !selectedMembersList.includes(m) && (!hasOverlap || !usedMembers.has(m))
+          );
+          
+          // 考虑需要添加1-3个成员的情况，或者需要替换成员的情况
+          if ((neededMembers.length > 0 && neededMembers.length <= 3) || hasOverlap) {
+            // 计算完成这个役种后的潜在分数
+            let potentialScore = currentScore;
+            if (hasOverlap) {
+              // 如果有重叠，需要找到重叠的役种并减去其分数
+              const overlappingCombinations = completedCombinations.filter(c => 
+                c.completedMembers.some(m => combination.completedMembers.includes(m))
+              );
+              overlappingCombinations.forEach(c => {
+                potentialScore -= c.score;
+              });
+            }
+            potentialScore += combination.score;
+            
+            // 检查是否符合事务所特殊单位规则
+            let meetsOfficeRule = true;
+            if (combination.completedMembers.some(m => officeUnits.includes(m)) &&
+                !combination.completedMembers.some(m => groupLogos.includes(m.toLowerCase()) || groupLogos.includes(m))) {
+              meetsOfficeRule = false;
+            }
+            
+            if (meetsOfficeRule) {
+              potentialTargets.push({
+                combination: combination,
+                neededMembers: neededMembers,
+                potentialScore: potentialScore,
+                overlapWithExisting: hasOverlap,
+                existingMembers: existingMembers,
+                // 计算完成难度：需要添加的成员数量
+                difficulty: neededMembers.length
+              });
+            }
+          }
+        }
+      }
+      
+      // 按潜在分数降序排序（高分优先）
       potentialTargets.sort((a, b) => b.potentialScore - a.potentialScore);
       
       console.log('潜在的胡牌目标方案:', potentialTargets);
+      console.log('潜在目标数量:', potentialTargets.length);
       
-      // 遍历每个潜在目标，计算最优的移除建议
-      for (const target of potentialTargets) {
+      // 如果没有潜在目标，输出调试信息
+      if (potentialTargets.length === 0) {
+        console.log('没有潜在目标的原因:');
+        console.log('当前已选成员:', selectedMembersList);
+        console.log('当前已完成役种:', completedCombinations);
+        console.log('所有役种:', combinations);
+      }
+      
+      // 辅助函数：计算单个目标的移除建议
+      function calculateSuggestion(target) {
         const { combination, neededMembers, overlapWithExisting, existingMembers } = target;
         
         // 计算需要移除的成员数量
+        // 如果有重叠，需要移除的成员数量应该考虑到重叠的役种成员
+        // 但目前的逻辑是：移除数量 = 需要添加的成员数量
         const requiredRemovals = neededMembers.length;
         
         // 找出所有可以移除的成员，并按优先级排序
         // 优先级：
         // 1. 无用成员（不在任何已凑齐役种和目标役种中的成员）
-        // 2. 如果有重叠，重叠役种中的成员
-        // 3. 其他成员
+        // 2. 不在当前已凑齐役种中的成员（但可能在目标役种中）
+        // 3. 在已凑齐役种中但贡献分数较低的成员
+        // 4. 在已凑齐役种中但重叠较多的成员
         
-        // 确定需要保留的成员：已凑齐役种中的非重叠成员 + 目标役种中的现有成员
-        const membersToKeep = new Set();
+        // 1. 计算各个成员的重要性得分
+        const memberImportance = new Map();
         
-        // 添加非重叠的已凑齐役种成员
-        if (overlapWithExisting) {
-          completedCombinations.forEach(c => {
-            // 只保留不与目标役种重叠的役种成员
-            const isOverlapping = c.completedMembers.some(m => combination.completedMembers.includes(m));
-            if (!isOverlapping) {
-              c.completedMembers.forEach(m => membersToKeep.add(m));
-            }
+        // 首先，为所有成员设置基础分数
+        selectedMembersList.forEach(member => {
+          memberImportance.set(member, 0);
+        });
+        
+        // 2. 为已凑齐役种中的成员加分（贡献越大的成员分数越高）
+        completedCombinations.forEach(comb => {
+          // 役种分数越高，成员的重要性越高
+          const memberWeight = comb.score / comb.completedMembers.length;
+          comb.completedMembers.forEach(member => {
+            memberImportance.set(member, memberImportance.get(member) + memberWeight);
           });
-        } else {
-          // 如果没有重叠，保留所有已凑齐役种成员
-          usedMembers.forEach(m => membersToKeep.add(m));
-        }
+        });
         
-        // 添加目标役种中的现有成员
-        existingMembers.forEach(m => membersToKeep.add(m));
+        // 3. 为目标役种中的现有成员额外加分
+        existingMembers.forEach(member => {
+          memberImportance.set(member, memberImportance.get(member) + 10); // 目标役种成员重要性更高
+        });
         
-        // 找出可移除的成员，并分类
-        const removableMembers = [];
+        // 4. 计算可移除成员列表，按重要性从低到高排序
+        const removableMembers = [...selectedMembersList]
+          .sort((a, b) => memberImportance.get(a) - memberImportance.get(b));
         
-        // 1. 无用成员（不在需要保留的集合中）
-        const uselessMembers = selectedMembersList.filter(m => !membersToKeep.has(m));
-        removableMembers.push(...uselessMembers);
-        
-        // 2. 如果有重叠，添加重叠役种中的成员（但不在目标役种中）
-        if (overlapWithExisting) {
-          const overlappingMembers = selectedMembersList.filter(m => 
-            usedMembers.has(m) && 
-            combination.completedMembers.includes(m) && 
-            !existingMembers.includes(m)
+        // 5. 过滤掉不能移除的成员（如果移除会导致已凑齐役种全部失效）
+        const safeRemovableMembers = [];
+        for (const member of removableMembers) {
+          // 模拟移除该成员后，检查是否还有已凑齐役种
+          const tempMembers = selectedMembersList.filter(m => m !== member);
+          const remainingCombinations = completedCombinations.filter(c => 
+            c.completedMembers.every(m => tempMembers.includes(m))
           );
-          removableMembers.push(...overlappingMembers);
+          
+          // 只有当移除该成员后仍有已凑齐役种，或者该成员是无用成员时，才允许移除
+          if (remainingCombinations.length > 0 || memberImportance.get(member) === 0) {
+            safeRemovableMembers.push(member);
+          }
         }
         
-        console.log(`目标役种${combination.name}的保留成员:`, Array.from(membersToKeep));
-        console.log(`目标役种${combination.name}的可移除成员:`, removableMembers);
+        console.log(`目标役种${combination.name}的可移除成员:`, safeRemovableMembers);
         
         // 检查是否有足够的可移除成员
-        if (removableMembers.length >= requiredRemovals) {
-          // 选择前requiredRemovals个可移除成员
-          const membersToRemove = removableMembers.slice(0, requiredRemovals);
+        if (safeRemovableMembers.length >= requiredRemovals) {
+          // 选择重要性最低的requiredRemovals个成员移除
+          const membersToRemove = safeRemovableMembers.slice(0, requiredRemovals);
           
           // 模拟替换后的成员列表
           let tempMembers = [...selectedMembersList];
@@ -991,45 +1417,236 @@
           const canComplete = combination.completedMembers.every(m => tempMembers.includes(m));
           
           if (canComplete) {
-            // 计算实际的新分数（考虑可能的组合）
-            const newCombinations = [];
-            const newUsedMembers = new Set();
-            
-            // 先添加非重叠的已凑齐役种
+            // 计算调整后的分数
+            let newScore = currentScore;
             if (overlapWithExisting) {
-              completedCombinations.forEach(c => {
-                const isOverlapping = c.completedMembers.some(m => combination.completedMembers.includes(m));
-                if (!isOverlapping) {
-                  newCombinations.push(c);
-                  c.completedMembers.forEach(m => newUsedMembers.add(m));
-                }
-              });
-            } else {
-              completedCombinations.forEach(c => {
-                newCombinations.push(c);
-                c.completedMembers.forEach(m => newUsedMembers.add(m));
+              // 如果有重叠，需要找到重叠的役种并减去其分数
+              const overlappingCombinations = completedCombinations.filter(c => 
+                c.completedMembers.some(m => combination.completedMembers.includes(m))
+              );
+              overlappingCombinations.forEach(c => {
+                newScore -= c.score;
               });
             }
+            newScore += combination.score;
             
-            // 添加新完成的役种
-            newCombinations.push(combination);
-            combination.completedMembers.forEach(m => newUsedMembers.add(m));
+            // 计算替换后的役种组合
+            const tempCombinations = [...tempMembers];
+            const newCombinations = combinations.filter(c => {
+              // 检查该役种是否在替换后仍然完成
+              if (c.isTwoPersonCombination) return false; // 跳过两人役种
+              return c.completedMembers.every(m => tempCombinations.includes(m));
+            });
             
-            // 计算新分数
-            const newScore = newCombinations.reduce((sum, c) => sum + c.score, 0);
+            // 找出被替换的役种
+            const replacedCombinations = completedCombinations.filter(c => {
+              return !newCombinations.includes(c);
+            });
+            
+            // 计算调整次数：包含本次替换和后续可能需要的调整
+            // 每次调整可以替换一个成员，替换后可能需要额外调整来达成最终目标
+            // 考虑到后续可能需要的额外调整，这里估算总调整次数
+            let estimatedTotalAdjustments = requiredRemovals;
+            
+            // 模拟替换后的成员列表（使用已有的newCombinations变量）
+            
+            // 检查替换后是否已经达成胜利条件（3个役种）
+            const completedAfterReplacement = combinations.filter(c => {
+              if (c.isTwoPersonCombination) return false; // 跳过两人役种
+              return c.completedMembers.every(m => tempCombinations.includes(m));
+            });
+            
+            // 如果还没有达成胜利条件，估算还需要的额外调整次数
+            if (completedAfterReplacement.length < 3) {
+              // 估算额外需要的调整次数（根据缺少的役种数量估算）
+              const missingCombinations = 3 - completedAfterReplacement.length;
+              estimatedTotalAdjustments += missingCombinations * 2; // 假设每个役种平均需要2次调整
+            }
+            
+            // 限制最大调整次数，避免显示过于复杂的数值
+            const adjustmentsNeeded = Math.min(Math.max(1, estimatedTotalAdjustments), 5);
             
             return {
               removeMembers: membersToRemove,
               addMembers: neededMembers,
               newScore: newScore,
               newlyCompletedCombination: combination,
-              replaceCombination: overlapWithExisting ? "部分现有役种" : undefined
+              replaceCombination: replacedCombinations.length > 0 ? replacedCombinations[0].name : undefined,
+              difficulty: requiredRemovals, // 完成难度：需要替换的成员数量
+              adjustmentsNeeded: adjustmentsNeeded // 还需调整次数：根据实际需要的替换次数计算
             };
+          }
+        }
+        
+        return null;
+      }
+      
+      // 初始化结果容器
+      let optimalSuggestion = null;       // 最优组合（更容易达成）
+      let highestScoreSuggestion = null;  // 高分组合（分数更高）
+      
+      // 遍历每个潜在目标，计算最优的移除建议
+      for (const target of potentialTargets) {
+        const suggestion = calculateSuggestion(target);
+        
+        if (suggestion) {
+          // 更新最优组合（更容易达成：优先调整次数最少，其次难度最低，最后分数最高）
+          if (!optimalSuggestion) {
+            optimalSuggestion = suggestion;
+          } else if (suggestion.adjustmentsNeeded < optimalSuggestion.adjustmentsNeeded) {
+            optimalSuggestion = suggestion;
+          } else if (suggestion.adjustmentsNeeded === optimalSuggestion.adjustmentsNeeded) {
+            // 如果调整次数相同，选择难度最低的
+            if (suggestion.difficulty < optimalSuggestion.difficulty) {
+              optimalSuggestion = suggestion;
+            } else if (suggestion.difficulty === optimalSuggestion.difficulty) {
+              // 如果难度也相同，选择分数最高的
+              if (suggestion.newScore > optimalSuggestion.newScore) {
+                optimalSuggestion = suggestion;
+              }
+            }
+          }
+          
+          // 更新高分组合（分数最高，其次调整次数最少）
+          if (!highestScoreSuggestion) {
+            highestScoreSuggestion = suggestion;
+          } else if (suggestion.newScore > highestScoreSuggestion.newScore) {
+            highestScoreSuggestion = suggestion;
+          } else if (suggestion.newScore === highestScoreSuggestion.newScore) {
+            // 如果分数相同，选择调整次数最少的
+            if (suggestion.adjustmentsNeeded < highestScoreSuggestion.adjustmentsNeeded) {
+              highestScoreSuggestion = suggestion;
+            }
           }
         }
       }
       
-      return null;
+      // 如果没有找到单个役种替换方案，尝试寻找多个役种的组合方案
+      if (!optimalSuggestion && !highestScoreSuggestion) {
+        // 尝试寻找所有可能的役种组合，而不仅仅是单个役种
+        const allPossibleCombinations = combinations
+          .filter(c => !c.isCompleted && !c.isTwoPersonCombination)
+          .sort((a, b) => b.score - a.score);
+        
+        // 检查是否有可以通过替换成员来同时完成多个役种的情况
+        for (let i = 0; i < allPossibleCombinations.length; i++) {
+          for (let j = i + 1; j < allPossibleCombinations.length; j++) {
+            const comb1 = allPossibleCombinations[i];
+            const comb2 = allPossibleCombinations[j];
+            
+            // 检查两个役种是否有重叠成员
+            const hasMemberOverlap = comb1.completedMembers.some(m => comb2.completedMembers.includes(m));
+            if (hasMemberOverlap) continue;
+            
+            // 计算需要添加的成员
+            const neededMembers1 = comb1.pendingMembers.filter(m => !selectedMembersList.includes(m));
+            const neededMembers2 = comb2.pendingMembers.filter(m => !selectedMembersList.includes(m));
+            const totalNeededMembers = [...new Set([...neededMembers1, ...neededMembers2])];
+            
+            // 考虑替换3个以内成员的情况
+            if (totalNeededMembers.length > 0 && totalNeededMembers.length <= 3) {
+              // 确定需要保留的成员：已凑齐役种中的成员 + 两个目标役种中的现有成员
+              const membersToKeep = new Set(usedMembers);
+              const existingMembers1 = comb1.completedMembers.filter(m => selectedMembersList.includes(m));
+              const existingMembers2 = comb2.completedMembers.filter(m => selectedMembersList.includes(m));
+              existingMembers1.forEach(m => membersToKeep.add(m));
+              existingMembers2.forEach(m => membersToKeep.add(m));
+              
+              // 找出可移除的成员
+              const removableMembers = selectedMembersList.filter(m => !membersToKeep.has(m));
+              
+              if (removableMembers.length >= totalNeededMembers.length) {
+                // 选择前totalNeededMembers.length个可移除成员
+                const membersToRemove = removableMembers.slice(0, totalNeededMembers.length);
+                
+                // 模拟替换后的成员列表
+                let tempMembers = [...selectedMembersList];
+                
+                // 移除成员
+                membersToRemove.forEach(member => {
+                  const index = tempMembers.indexOf(member);
+                  if (index !== -1) {
+                    tempMembers.splice(index, 1);
+                  }
+                });
+                
+                // 添加需要的成员
+                tempMembers = [...tempMembers, ...totalNeededMembers];
+                
+                // 验证是否能完成两个目标役种
+                const canComplete1 = comb1.completedMembers.every(m => tempMembers.includes(m));
+                const canComplete2 = comb2.completedMembers.every(m => tempMembers.includes(m));
+                
+                if (canComplete1 && canComplete2) {
+                  // 计算实际的新分数（考虑可能的组合）
+                  // 重新计算所有可能的役种组合
+                  const newCombinations = combinations.filter(c => {
+                    // 检查该役种是否在替换后仍然完成
+                    if (c.isTwoPersonCombination) return false; // 跳过两人役种
+                    return c.completedMembers.every(m => tempMembers.includes(m));
+                  });
+                  
+                  // 找出不重叠的役种组合，最多3个，以获取最大分数
+                  const optimalNewCombinations = findOptimalCombinations(newCombinations);
+                  
+                  // 计算新分数
+                  const newScore = optimalNewCombinations.reduce((sum, c) => sum + c.score, 0);
+                  
+                  // 找出被替换的役种
+                  const replacedCombinations = completedCombinations.filter(c => {
+                    return !newCombinations.includes(c);
+                  });
+                  
+                  // 创建建议对象
+                  const suggestion = {
+                    removeMembers: membersToRemove,
+                    addMembers: totalNeededMembers,
+                    newScore: newScore,
+                    newlyCompletedCombination: comb1,  // 返回第一个役种作为主要建议
+                    additionalCompletedCombination: comb2,  // 返回第二个役种作为额外信息
+                    replaceCombination: replacedCombinations.length > 0 ? "部分现有役种" : undefined,
+                    difficulty: totalNeededMembers.length // 完成难度：需要替换的成员数量
+                  };
+                  
+                  // 更新最优组合（更容易达成：难度最低）
+                  if (!optimalSuggestion || suggestion.difficulty < optimalSuggestion.difficulty) {
+                    optimalSuggestion = suggestion;
+                  }
+                  
+                  // 更新高分组合（分数最高）
+                  if (!highestScoreSuggestion || suggestion.newScore > highestScoreSuggestion.newScore) {
+                    highestScoreSuggestion = suggestion;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // 构建返回结果，包含两套方案
+      const result = {};
+      
+      if (optimalSuggestion) {
+        result.optimal = optimalSuggestion;
+      }
+      
+      if (highestScoreSuggestion) {
+        result.highScore = highestScoreSuggestion;
+      }
+      
+      // 如果两套方案相同，则只返回一套
+      if (result.optimal && result.highScore && 
+          JSON.stringify(result.optimal) === JSON.stringify(result.highScore)) {
+        console.log('两套方案相同，只返回一套');
+        return result.optimal;
+      }
+      
+      console.log('最终返回结果:', result);
+      console.log('是否有最优建议:', !!result.optimal);
+      console.log('是否有高分建议:', !!result.highScore);
+      
+      return Object.keys(result).length > 0 ? result : null;
     }
     
     // 渲染结果
@@ -1039,9 +1656,9 @@
           <div class="bg-white rounded-xl shadow-md p-6 card-hover">
             <div class="flex justify-between items-center mb-4">
               <div>
-                <h3 class="text-xl font-bold text-gray-800">${combination.name}</h3>
+                <h3 class="text-xl font-bold text-gray-800">${escapeHtml(combination.name)}</h3>
                 <div class="flex items-center mt-1">
-                  <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">${combination.category}</span>
+                  <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">${escapeHtml(combination.category)}</span>
                   <span class="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs ml-2">+${combination.score}分</span>
                 </div>
               </div>
@@ -1054,10 +1671,10 @@
               <h4 class="text-sm font-medium text-gray-700 mb-2">成员列表:</h4>
               <div class="flex flex-wrap">
                 ${combination.completedMembers.map(member => 
-                  `<span class="member-tag member-tag-completed">${member}</span>`
+                  `<span class="member-tag member-tag-completed">${escapeHtml(member)}</span>`
                 ).join('')}
                 ${combination.pendingMembers.map(member => 
-                  `<span class="member-tag member-tag-pending">${member}</span>`
+                  `<span class="member-tag member-tag-pending">${escapeHtml(member)}</span>`
                 ).join('')}
               </div>
             </div>
@@ -1067,7 +1684,7 @@
                 <span class="text-sm font-medium text-gray-700">还需: </span>
                 <span class="text-sm ${combination.pendingMembers.length > 0 ? 'text-neutral' : 'text-success'}">
                   ${combination.pendingMembers.length > 0 
-                    ? `${combination.pendingMembers.length} 人 (${combination.pendingMembers.join(', ')})` 
+                    ? `${combination.pendingMembers.length} 人 (${combination.pendingMembers.map(member => escapeHtml(member)).join(', ')})` 
                     : '已凑齐！'}
                 </span>
               </div>
@@ -1117,6 +1734,9 @@
         // 计算总分数
         const totalScore = baseScore + twoPersonBonus;
         
+        // 保存胡牌数据到localStorage
+        saveWinningData(optimalCombinations, allCompletedCombinations, totalScore);
+        
         // 更新胜利模态框的内容
         const victoryContent = victoryModal.querySelector('.text-center');
         victoryContent.innerHTML = `
@@ -1144,9 +1764,14 @@
               <span class="text-2xl font-bold text-primary">${totalScore} 分</span>
             </div>
           </div>
-          <button id="close-victory-modal" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
-            继续游戏
-          </button>
+          <div class="flex justify-center gap-4">
+            <button id="close-victory-modal" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+              继续游戏
+            </button>
+            <button id="undo-hand-btn" class="bg-secondary hover:bg-secondary/90 text-white font-medium px-6 py-2 rounded-lg transition-all">
+              <i class="fa fa-undo mr-1"></i> 撤回至上一步
+            </button>
+          </div>
         `;
         
         // 重新绑定关闭按钮事件
@@ -1155,9 +1780,84 @@
           victoryModal.classList.add('hidden');
         });
         
+        // 绑定撤回按钮事件
+        const undoHandBtn = document.getElementById('undo-hand-btn');
+        undoHandBtn.addEventListener('click', function() {
+          // 恢复到上一次操作的状态
+          if (historyStates.length > 0) {
+            // 恢复到上一次手牌状态
+            selectedMembersList = historyStates.pop();
+            renderSelectedMembers();
+            
+            // 隐藏胜利模态框
+            victoryModal.classList.add('hidden');
+            
+            // 重新搜索役种组合
+            search();
+            
+            // 确保撤销按钮正确显示
+            const undoBtn = document.getElementById('undo-button');
+            if (undoBtn) {
+              if (historyStates.length > 0) {
+                undoBtn.classList.remove('hidden');
+              } else {
+                undoBtn.classList.add('hidden');
+              }
+            }
+          }
+        });
+        
+        // 保存胡牌数据到localStorage
+        saveWinningData(optimalCombinations, allCompletedCombinations, totalScore);
+        
         // 显示胜利提示
         victoryModal.classList.remove('hidden');
       }
+    }
+    
+    // 保存胡牌数据到localStorage
+    function saveWinningData(optimalCombinations, allCompletedCombinations, totalScore) {
+      // 获取现有的胡牌数据
+      let winningData = JSON.parse(localStorage.getItem('winningStatistics')) || {
+        yakuCounts: {}, // 每个役种的胡牌次数
+        allWins: [], // 所有胡牌记录
+        totalWins: 0 // 总胡牌次数
+      };
+      
+      // 更新役种胡牌次数
+      optimalCombinations.forEach(yaku => {
+        // 对于大型役种的小组，使用原始役种名称进行统计
+        const yakuName = yaku.originalName || yaku.name;
+        if (winningData.yakuCounts[yakuName]) {
+          winningData.yakuCounts[yakuName]++;
+        } else {
+          winningData.yakuCounts[yakuName] = 1;
+        }
+      });
+      
+      // 保存完整的胡牌记录
+      const winRecord = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        mainYaku: optimalCombinations.map(yaku => ({
+          name: yaku.originalName || yaku.name,
+          score: yaku.score
+        })),
+        bonusYaku: allCompletedCombinations.filter(yaku => !optimalCombinations.some(main => 
+          (main.originalName || main.name) === (yaku.originalName || yaku.name)
+        )).map(yaku => ({
+          name: yaku.originalName || yaku.name,
+          score: yaku.score
+        })),
+        totalScore: totalScore,
+        selectedMembers: [...selectedMembersList] // 胡牌时的手牌
+      };
+      
+      winningData.allWins.push(winRecord);
+      winningData.totalWins++;
+      
+      // 保存到localStorage
+      localStorage.setItem('winningStatistics', JSON.stringify(winningData));
     }
     
     // 找出不重复成员的最优组合
@@ -1169,6 +1869,24 @@
       // 筛选出非两人役种的已完成役种（两人役种不能直接参与胡牌）
       const nonTwoPersonCombinations = combinations.filter(c => !c.isTwoPersonCombination);
       
+      // 生成所有可能的3人组合
+      function generateCombinations(arr, k) {
+        function combine(subset, start) {
+          if (subset.length === k) {
+            result.push([...subset]);
+            return;
+          }
+          for (let i = start; i < arr.length; i++) {
+            subset.push(arr[i]);
+            combine(subset, i + 1);
+            subset.pop();
+          }
+        }
+        const result = [];
+        combine([], 0);
+        return result;
+      }
+      
       // 扩展大型役种（6人或以上）为多个小组
       const expandedCombinations = [];
       for (const combination of nonTwoPersonCombinations) {
@@ -1178,32 +1896,32 @@
           // 获取役种定义的所有有效成员
           const validMembers = combination.members.filter(m => m !== '-');
           
-          // 拆分成多个3人小组（确保每个小组至少3人）
-          for (let i = 0; i < validMembers.length - 2; i += 3) {
-            const groupMembers = validMembers.slice(i, i + 3);
-            
+          // 生成所有可能的3人组合
+          const allThreeMemberCombinations = generateCombinations(validMembers, 3);
+          
+          // 为每个组合生成一个条目
+          allThreeMemberCombinations.forEach((groupMembers, index) => {
             // 检查当前小组有多少成员已被选择
             const completedGroupMembers = groupMembers.filter(member => 
               combination.completedMembers.includes(member)
             );
             
-            // 只有当小组中至少有1个成员被选择时才加入扩展列表
-            if (completedGroupMembers.length > 0) {
+            // 只有当小组中满3个成员被选择时才加入扩展列表（参与胡牌的组合一定是三人的）
+            if (completedGroupMembers.length >= 3) {
               expandedCombinations.push({
                 ...combination,
-                name: `${combination.name} (组${Math.floor(i/3) + 1})`,
+                originalName: combination.name, // 保存原始役种名称用于统计
+                groupName: `${combination.name} (组${index + 1})`, // 小组名称仅用于显示
                 completedMembers: completedGroupMembers,
                 pendingMembers: groupMembers.filter(member => 
                   !combination.completedMembers.includes(member)
                 ),
                 totalMembers: groupMembers.length,
-                // 小组完成条件：至少3个成员已被选择且符合事务所规则
-                isCompleted: completedGroupMembers.length >= 3 && 
-                            (combination.completedMembers.length >= 3 && 
-                             combination.isCompleted)
+                // 小组完成条件：满3个成员已被选择且符合事务所规则
+                isCompleted: completedGroupMembers.length >= 3
               });
             }
-          }
+          });
         } else {
           expandedCombinations.push(combination);
         }
@@ -1316,6 +2034,13 @@
       setupEventListeners();
       
       console.log('初始化完成！');
+    });
+    
+    // 全局错误处理
+    window.addEventListener('error', function(e) {
+      console.error('全局错误:', e.error);
+      console.error('错误位置:', e.filename, e.lineno, e.colno);
+      console.error('错误消息:', e.message);
     });
   </script>
   
@@ -1583,5 +2308,32 @@
     });
   }
 </script>
+  
+  <!-- 返回顶部/底部漂浮窗 -->
+  <div class="fixed right-4 bottom-4 flex flex-col gap-2 z-50 opacity-20 hover:opacity-100 transition-opacity duration-300">
+    <button id="scrollToTop" class="bg-primary text-white rounded-full p-3 shadow-lg hover:bg-primary/90 transition-colors duration-300">
+      <i class="fas fa-arrow-up"></i>
+    </button>
+    <button id="scrollToBottom" class="bg-primary text-white rounded-full p-3 shadow-lg hover:bg-primary/90 transition-colors duration-300">
+      <i class="fas fa-arrow-down"></i>
+    </button>
+  </div>
+  
+  <script>
+    // 返回顶部/底部功能
+    document.getElementById('scrollToTop').addEventListener('click', function() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+    
+    document.getElementById('scrollToBottom').addEventListener('click', function() {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+      });
+    });
+  </script>
 </body>
 </html>

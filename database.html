@@ -7,16 +7,9 @@
   <!-- Tailwind CSS v3 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome -->
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
   <!-- 引入数据文件 -->
   <script src="data.js"></script>
-  
-  <!-- PWA相关标签 -->
-  <meta name="theme-color" content="#4a5568">
-  <meta name="description" content="ES麻将役种数据库管理">
-  <meta name="author" content="Aruai">
-  <meta name="publisher" content="Aruai">
-  <link rel="manifest" href="./manifest.json">
   
   <script>
     tailwind.config = {
@@ -87,13 +80,62 @@
     <header class="flex justify-between items-center mb-8">
       <div>
         <h1 class="text-4xl font-bold text-gray-800 mb-2">ES麻将役种数据库管理</h1>
-        <p class="text-gray-600">管理和添加新的役种数据</p>
+        <p class="text-gray-600">查看、搜索、编辑役种数据，支持数据导入导出</p>
       </div>
       <a href="index.html" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center">
         <i class="fa fa-arrow-left mr-2"></i> 返回查询助手
       </a>
     </header>
-
+    
+    <!-- 统计区域 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- 胡牌次数统计 -->
+        <div class="bg-white rounded-lg shadow-sm p-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-0.5">总胡牌次数</h3>
+                    <p class="text-2xl font-bold text-primary" id="total-wins">0</p>
+                </div>
+                <div class="bg-primary/10 text-primary p-2 rounded-full">
+                    <i class="fa fa-trophy text-lg"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 最常胡的役种 -->
+        <div class="bg-white rounded-lg shadow-sm p-3">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">最常胡的役种</h3>
+            <div id="top-yaku-list" class="space-y-1 mb-2">
+                <p class="text-gray-500 text-center text-xs">暂无数据</p>
+            </div>
+            <div id="yaku-pagination" class="flex justify-center items-center space-x-1 hidden text-xs">
+                <button id="yaku-prev" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs">
+                    <i class="fa fa-chevron-left"></i>
+                </button>
+                <span id="yaku-page-info" class="flex items-center text-xs">第1页</span>
+                <button id="yaku-next" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs">
+                    <i class="fa fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 最常拿到的手牌 -->
+        <div class="bg-white rounded-lg shadow-sm p-3">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2">最常拿到的手牌</h3>
+            <div id="top-members-list" class="space-y-1 mb-2">
+                <p class="text-gray-500 text-center text-xs">暂无数据</p>
+            </div>
+            <div id="members-pagination" class="flex justify-center items-center space-x-1 hidden text-xs">
+                <button id="members-prev" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs">
+                    <i class="fa fa-chevron-left"></i>
+                </button>
+                <span id="members-page-info" class="flex items-center text-xs">第1页</span>
+                <button id="members-next" class="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs">
+                    <i class="fa fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
   
     <!-- 主要功能区域 -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -237,103 +279,15 @@
     const cancelBtn = document.getElementById('cancel-btn');
     const deleteModal = document.getElementById('delete-modal');
     const deleteName = document.getElementById('delete-name');
-    const cancelDeleteBtn = document.getElementById('cancel-delete');
-    const confirmDeleteBtn = document.getElementById('confirm-delete');
+    const cancelDeleteBtnOld = document.getElementById('cancel-delete');
+    const confirmDeleteBtnOld = document.getElementById('confirm-delete');
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
     const exportBtn = document.getElementById('export-btn');
     const importFileInput = document.getElementById('import-file');
     const fileNameDisplay = document.getElementById('file-name');
     
-    // 初始化
-    document.addEventListener('DOMContentLoaded', function() {
-      renderTable();
-      updatePagination();
-      
-      // 搜索功能
-      searchBtn.addEventListener('click', search);
-      searchInput.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-          search();
-        }
-      });
-      
-      // 分页功能
-      prevPageBtn.addEventListener('click', goToPrevPage);
-      nextPageBtn.addEventListener('click', goToNextPage);
-      
-      // 表单提交
-      combinationForm.addEventListener('submit', handleFormSubmit);
-      
-      // 取消编辑
-      cancelBtn.addEventListener('click', cancelEdit);
-      
-      // 删除功能
-      cancelDeleteBtn.addEventListener('click', hideDeleteModal);
-      confirmDeleteBtn.addEventListener('click', confirmDelete);
-      
-      // 导出功能已移至setupEventListeners函数中
-      
-      // 导入功能
-      importFileInput.addEventListener('change', handleFileSelect);
-      
-      // 添加成员按钮
-      document.getElementById('add-member-btn').addEventListener('click', addMemberInput);
-      
-      // 分类选择事件
-      document.getElementById('category').addEventListener('change', function() {
-        const customCategoryContainer = document.getElementById('custom-category-container');
-        if (this.value === '自定义') {
-          customCategoryContainer.classList.remove('hidden');
-          // 聚焦到自定义输入框
-          document.getElementById('custom-category').focus();
-        } else {
-          customCategoryContainer.classList.add('hidden');
-        }
-      });
-      
-      // 自定义分类输入框回车事件
-      document.getElementById('custom-category').addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          
-          const customCategory = this.value.trim();
-          if (!customCategory) {
-            showToast('请输入自定义分类名称', 'error');
-            return;
-          }
-          
-          const categorySelect = document.getElementById('category');
-          
-          // 检查是否已存在相同的分类
-          let optionExists = false;
-          for (let i = 0; i < categorySelect.options.length; i++) {
-            if (categorySelect.options[i].value === customCategory) {
-              optionExists = true;
-              categorySelect.selectedIndex = i;
-              break;
-            }
-          }
-          
-          // 如果不存在，添加新选项
-          if (!optionExists && categorySelect.options.length < 20) {
-            const newOption = document.createElement('option');
-            newOption.value = customCategory;
-            newOption.textContent = customCategory;
-            // 插入到"自定义"选项之前
-            categorySelect.insertBefore(newOption, categorySelect.lastElementChild);
-            // 选择新添加的选项
-            categorySelect.value = customCategory;
-          }
-          
-          // 隐藏自定义输入框
-          document.getElementById('custom-category-container').classList.add('hidden');
-          
-          // 显示成功提示
-          showToast(`分类"${customCategory}"已添加并选择`);
-        }
-      });
-    });
+    // 初始化代码已移至页面底部的DOMContentLoaded事件监听器中
     
     // 添加成员输入框
     function addMemberInput() {
@@ -736,7 +690,7 @@
 
     <!-- 添加役种区域 -->
     <section class="bg-white rounded-xl shadow-md p-4 mb-8 w-3/4 mx-auto">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">添加新役种</h2>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">添加新役种（功能内测中·暂未开放）</h2>
       <form id="add-combination-form" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -901,12 +855,8 @@
     const exportJsonBtn = document.getElementById('export-json-btn');
     const exportCsvBtn = document.getElementById('export-csv-btn');
     const addCombinationForm = document.getElementById('add-combination-form');
-    const combinationsContainer = document.getElementById('combinations-container');
-    const searchInput = document.getElementById('search-input');
-    const searchBtn = document.getElementById('search-btn');
-    const categoryFilter = document.getElementById('category-filter');
     const editModal = document.getElementById('edit-modal');
-    const closeEditModal = document.getElementById('close-edit-modal');
+    const closeEditModalBtn = document.getElementById('close-edit-modal');
     const editCombinationForm = document.getElementById('edit-combination-form');
     const deleteCombinationBtn = document.getElementById('delete-combination-btn');
     const confirmDeleteModal = document.getElementById('confirm-delete-modal');
@@ -1363,13 +1313,16 @@ function exportCSV() {
       // 添加役种表单
       addCombinationForm.addEventListener('submit', addCombination);
       
-      // 搜索和筛选
-      searchBtn.addEventListener('click', renderCombinations);
-      searchInput.addEventListener('input', renderCombinations);
-      categoryFilter.addEventListener('change', renderCombinations);
+      // 搜索功能
+      searchBtn.addEventListener('click', search);
+      searchInput.addEventListener('input', search);
+      
+      // 分页按钮
+      document.getElementById('prev-page').addEventListener('click', goToPrevPage);
+      document.getElementById('next-page').addEventListener('click', goToNextPage);
       
       // 编辑模态框
-      closeEditModal.addEventListener('click', closeEditModal);
+      closeEditModalBtn.addEventListener('click', closeEditModal);
       editCombinationForm.addEventListener('submit', updateCombination);
       
       // 删除相关
@@ -1399,6 +1352,285 @@ function exportCSV() {
           closePasswordModal();
         }
       });
+      
+      // 导入功能
+      if (importFileInput) {
+        importFileInput.addEventListener('change', handleFileSelect);
+      }
+      
+      // 添加成员按钮
+      const addMemberBtn = document.getElementById('add-member-btn');
+      if (addMemberBtn) {
+        addMemberBtn.addEventListener('click', addMemberInput);
+      }
+      
+      // 分类选择事件
+      const categorySelect = document.getElementById('category');
+      if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+          const customCategoryContainer = document.getElementById('custom-category-container');
+          if (this.value === '自定义') {
+            customCategoryContainer.classList.remove('hidden');
+            // 聚焦到自定义输入框
+            const customCategoryInput = document.getElementById('custom-category');
+            if (customCategoryInput) {
+              customCategoryInput.focus();
+            }
+          } else {
+            customCategoryContainer.classList.add('hidden');
+          }
+        });
+      }
+      
+      // 自定义分类输入框回车事件
+      const customCategoryInput = document.getElementById('custom-category');
+      if (customCategoryInput) {
+        customCategoryInput.addEventListener('keypress', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            
+            const customCategory = this.value.trim();
+            if (!customCategory) {
+              showToast('请输入自定义分类名称', 'error');
+              return;
+            }
+            
+            const categorySelect = document.getElementById('category');
+            if (categorySelect) {
+              // 检查是否已存在相同的分类
+              let optionExists = false;
+              for (let i = 0; i < categorySelect.options.length; i++) {
+                if (categorySelect.options[i].value === customCategory) {
+                  optionExists = true;
+                  categorySelect.selectedIndex = i;
+                  break;
+                }
+              }
+              
+              // 如果不存在，添加新选项
+              if (!optionExists && categorySelect.options.length < 20) {
+                const newOption = document.createElement('option');
+                newOption.value = customCategory;
+                newOption.textContent = customCategory;
+                // 插入到"自定义"选项之前
+                categorySelect.insertBefore(newOption, categorySelect.lastElementChild);
+                // 选择新添加的选项
+                categorySelect.value = customCategory;
+              }
+              
+              // 隐藏自定义输入框
+              const customCategoryContainer = document.getElementById('custom-category-container');
+              customCategoryContainer.classList.add('hidden');
+              
+              // 显示成功提示
+              showToast(`分类"${customCategory}"已添加并选择`);
+            }
+          }
+        });
+      }
+    }
+    
+    // 分页状态变量
+    let yakuPage = 1;
+    const yakuPerPage = 5;
+    let membersPage = 1;
+    const membersPerPage = 5;
+    
+    // 显示统计数据
+    function showStatistics() {
+      // 获取胡牌数据
+      const winningData = JSON.parse(localStorage.getItem('winningStatistics')) || {
+        yakuCounts: {},
+        allWins: [],
+        totalWins: 0
+      };
+      
+      // 显示总胡牌次数
+      const totalWinsElement = document.getElementById('total-wins');
+      totalWinsElement.textContent = winningData.totalWins;
+      
+      // 显示最常胡的役种
+      const topYakuList = document.getElementById('top-yaku-list');
+      const yakuPagination = document.getElementById('yaku-pagination');
+      const yakuPrev = document.getElementById('yaku-prev');
+      const yakuNext = document.getElementById('yaku-next');
+      const yakuPageInfo = document.getElementById('yaku-page-info');
+      
+      if (winningData.totalWins > 0) {
+        // 按胡牌次数排序役种，最多显示前10个
+        const sortedYaku = Object.entries(winningData.yakuCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 10);
+        
+        // 计算总页数
+        const totalYakuPages = Math.ceil(sortedYaku.length / yakuPerPage);
+        
+        // 确保当前页在有效范围内
+        yakuPage = Math.max(1, Math.min(yakuPage, totalYakuPages));
+        
+        // 获取当前页的数据
+        const startIndex = (yakuPage - 1) * yakuPerPage;
+        const endIndex = startIndex + yakuPerPage;
+        const currentPageYaku = sortedYaku.slice(startIndex, endIndex);
+        
+        topYakuList.innerHTML = currentPageYaku.map(([name, count], index) => `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
+              <span class="text-gray-700">${name}</span>
+            </div>
+            <span class="font-medium text-primary">${count}次</span>
+          </div>
+        `).join('');
+        
+        // 更新分页信息
+        yakuPageInfo.textContent = `第${yakuPage}页`;
+        
+        // 显示分页控件
+        if (totalYakuPages > 1) {
+          yakuPagination.classList.remove('hidden');
+          yakuPrev.disabled = yakuPage === 1;
+          yakuNext.disabled = yakuPage === totalYakuPages;
+        } else {
+          yakuPagination.classList.add('hidden');
+        }
+      } else {
+        topYakuList.innerHTML = '<p class="text-gray-500 text-center">暂无数据</p>';
+        yakuPagination.classList.add('hidden');
+      }
+      
+      // 显示最常拿到的手牌
+      const topMembersList = document.getElementById('top-members-list');
+      const membersPagination = document.getElementById('members-pagination');
+      const membersPrev = document.getElementById('members-prev');
+      const membersNext = document.getElementById('members-next');
+      const membersPageInfo = document.getElementById('members-page-info');
+      
+      if (winningData.totalWins > 0) {
+        // 统计每个成员出现的次数
+        const memberCounts = {};
+        winningData.allWins.forEach(win => {
+          win.selectedMembers.forEach(member => {
+            if (memberCounts[member]) {
+              memberCounts[member]++;
+            } else {
+              memberCounts[member] = 1;
+            }
+          });
+        });
+        
+        // 按出现次数排序成员，最多显示前10个
+        const sortedMembers = Object.entries(memberCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 10);
+        
+        // 计算总页数
+        const totalMembersPages = Math.ceil(sortedMembers.length / membersPerPage);
+        
+        // 确保当前页在有效范围内
+        membersPage = Math.max(1, Math.min(membersPage, totalMembersPages));
+        
+        // 获取当前页的数据
+        const startIndex = (membersPage - 1) * membersPerPage;
+        const endIndex = startIndex + membersPerPage;
+        const currentPageMembers = sortedMembers.slice(startIndex, endIndex);
+        
+        topMembersList.innerHTML = currentPageMembers.map(([name, count], index) => `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="inline-block w-2 h-2 bg-secondary rounded-full mr-2"></span>
+              <span class="text-gray-700">${name}</span>
+            </div>
+            <span class="font-medium text-secondary">${count}次</span>
+          </div>
+        `).join('');
+        
+        // 更新分页信息
+        membersPageInfo.textContent = `第${membersPage}页`;
+        
+        // 显示分页控件
+        if (totalMembersPages > 1) {
+          membersPagination.classList.remove('hidden');
+          membersPrev.disabled = membersPage === 1;
+          membersNext.disabled = membersPage === totalMembersPages;
+        } else {
+          membersPagination.classList.add('hidden');
+        }
+      } else {
+        topMembersList.innerHTML = '<p class="text-gray-500 text-center">暂无数据</p>';
+        membersPagination.classList.add('hidden');
+      }
+    }
+    
+    // 分页控制函数
+    function setupPaginationEvents() {
+      // 役种分页
+      document.getElementById('yaku-prev').addEventListener('click', () => {
+        if (yakuPage > 1) {
+          yakuPage--;
+          showStatistics();
+        }
+      });
+      
+      document.getElementById('yaku-next').addEventListener('click', () => {
+        const winningData = JSON.parse(localStorage.getItem('winningStatistics')) || {
+          yakuCounts: {},
+          allWins: [],
+          totalWins: 0
+        };
+        
+        if (winningData.totalWins > 0) {
+          const sortedYaku = Object.entries(winningData.yakuCounts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 10);
+          
+          const totalYakuPages = Math.ceil(sortedYaku.length / yakuPerPage);
+          if (yakuPage < totalYakuPages) {
+            yakuPage++;
+            showStatistics();
+          }
+        }
+      });
+      
+      // 成员分页
+      document.getElementById('members-prev').addEventListener('click', () => {
+        if (membersPage > 1) {
+          membersPage--;
+          showStatistics();
+        }
+      });
+      
+      document.getElementById('members-next').addEventListener('click', () => {
+        const winningData = JSON.parse(localStorage.getItem('winningStatistics')) || {
+          yakuCounts: {},
+          allWins: [],
+          totalWins: 0
+        };
+        
+        if (winningData.totalWins > 0) {
+          // 统计每个成员出现的次数
+          const memberCounts = {};
+          winningData.allWins.forEach(win => {
+            win.selectedMembers.forEach(member => {
+              if (memberCounts[member]) {
+                memberCounts[member]++;
+              } else {
+                memberCounts[member] = 1;
+              }
+            });
+          });
+          
+          const sortedMembers = Object.entries(memberCounts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 10);
+          
+          const totalMembersPages = Math.ceil(sortedMembers.length / membersPerPage);
+          if (membersPage < totalMembersPages) {
+            membersPage++;
+            showStatistics();
+          }
+        }
+      });
     }
     
     // 页面加载完成后初始化
@@ -1410,7 +1642,41 @@ function exportCSV() {
       setupEventListeners();
       
       // 渲染役种列表
-      renderCombinations();
+      renderTable();
+      updatePagination();
+      
+      // 显示统计数据
+      showStatistics();
+      
+      // 设置分页事件
+      setupPaginationEvents();
+    });
+  </script>
+  
+  <!-- 返回顶部/底部漂浮窗 -->
+  <div class="fixed right-4 bottom-4 flex flex-col gap-2 z-50 opacity-20 hover:opacity-100 transition-opacity duration-300">
+    <button id="scrollToTop" class="bg-primary text-white rounded-full p-3 shadow-lg hover:bg-primary/90 transition-colors duration-300">
+      <i class="fas fa-arrow-up"></i>
+    </button>
+    <button id="scrollToBottom" class="bg-primary text-white rounded-full p-3 shadow-lg hover:bg-primary/90 transition-colors duration-300">
+      <i class="fas fa-arrow-down"></i>
+    </button>
+  </div>
+  
+  <script>
+    // 返回顶部/底部功能
+    document.getElementById('scrollToTop').addEventListener('click', function() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+    
+    document.getElementById('scrollToBottom').addEventListener('click', function() {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+      });
     });
   </script>
 </body>
