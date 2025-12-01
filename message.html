@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css">
     <!-- 引入数据文件 -->
     <script src="data.js"></script>
+    <!-- 引入GitHub Issues API -->
+    <script src="github_issues_api.js"></script>
     
     <script>
         tailwind.config = {
@@ -165,6 +167,7 @@
                 <button id="yaku-submit" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center justify-center">
                     <i class="fa fa-paper-plane mr-2"></i>
                     发送留言
+                    <i id="yaku-loading" class="fa fa-spinner fa-spin ml-2 hidden"></i>
                 </button>
             </div>
             
@@ -179,6 +182,10 @@
                 </div>
                 <div id="yaku-messages">
                     <!-- 这里会通过JavaScript动态加载留言列表 -->
+                    <div id="yaku-loading-indicator" class="flex justify-center items-center py-8 text-gray-500 hidden">
+                        <i class="fa fa-spinner fa-spin text-xl mr-2"></i>
+                        正在加载留言...
+                    </div>
                 </div>
             </div>
         </div>
@@ -232,6 +239,7 @@
                 <button id="admin-submit" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-2 rounded-lg transition-all flex items-center justify-center">
                     <i class="fa fa-paper-plane mr-2"></i>
                     发送建议
+                    <i id="admin-loading" class="fa fa-spinner fa-spin ml-2 hidden"></i>
                 </button>
             </div>
             
@@ -246,6 +254,10 @@
                 </div>
                 <div id="admin-messages">
                     <!-- 这里会通过JavaScript动态加载建议列表 -->
+                    <div id="admin-loading-indicator" class="flex justify-center items-center py-8 text-gray-500 hidden">
+                        <i class="fa fa-spinner fa-spin text-xl mr-2"></i>
+                        正在加载留言...
+                    </div>
                 </div>
             </div>
         </div>
@@ -274,8 +286,55 @@
             });
         }
         
-        // 保存留言到localStorage
-        function saveMessage(type, yaku, content, nickname = '匿名用户') {
+        // 保存留言 - 优先使用GitHub Issues API，然后是本地后端，最后回退到localStorage
+        async function saveMessage(type, yaku, content, nickname = '匿名用户') {
+            // 确保admin类型有默认的yaku值
+            const yakuValue = type === 'admin' ? 'admin' : yaku;
+            
+            // 1. 尝试使用GitHub Issues API
+            try {
+                const message = await saveMessageToGitHub(type, yakuValue, content, nickname);
+                console.log('留言已保存到GitHub Issues');
+                return message;
+            } catch (githubError) {
+                console.error('GitHub Issues API保存失败:', githubError);
+                
+                // 2. 尝试使用本地后端API
+                try {
+                    const response = await fetch('http://localhost:3000/api/messages', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            type,
+                            yaku: yakuValue,
+                            content,
+                            nickname
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('保存留言失败');
+                    }
+                    
+                    const message = await response.json();
+                    // 转换日期格式以便前端显示
+                    message.date = new Date(message.timestamp).toLocaleString('zh-CN');
+                    console.log('留言已保存到本地后端');
+                    return message;
+                } catch (backendError) {
+                    console.error('本地后端保存失败:', backendError);
+                    alert('GitHub Issues和本地后端都不可用，将使用浏览器本地存储');
+                    
+                    // 3. 回退到localStorage
+                    return saveMessageToLocalStorage(type, yaku, content, nickname);
+                }
+            }
+        }
+        
+        // 本地存储作为后备方案
+        function saveMessageToLocalStorage(type, yaku, content, nickname = '匿名用户') {
             // 生成或获取用户标识（模拟IP）
             let userIdentifier = localStorage.getItem('userIdentifier');
             if (!userIdentifier) {
@@ -310,8 +369,45 @@
             return message;
         }
         
-        // 保存回复到留言
-        function saveReply(type, yaku, messageId, content, nickname = '匿名用户') {
+        // 保存回复到后端API
+        async function saveReply(type, yaku, messageId, content, nickname = '匿名用户') {
+            try {
+                const response = await fetch(`http://localhost:3000/api/messages/${messageId}/replies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content,
+                        nickname
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('保存回复失败');
+                }
+                
+                const message = await response.json();
+                
+                // 找到最新添加的回复
+                const latestReply = message.replies[message.replies.length - 1];
+                
+                // 转换日期格式
+                return {
+                    ...latestReply,
+                    id: latestReply._id || Date.now(),
+                    date: new Date(latestReply.timestamp).toLocaleString('zh-CN')
+                };
+            } catch (error) {
+                console.error('保存回复时出错:', error);
+                alert('保存回复失败，请确保后端服务正在运行');
+                // 失败时回退到localStorage
+                return saveReplyToLocalStorage(type, yaku, messageId, content, nickname);
+            }
+        }
+        
+        // 本地存储作为后备方案
+        function saveReplyToLocalStorage(type, yaku, messageId, content, nickname = '匿名用户') {
             // 生成或获取用户标识（模拟IP）
             let userIdentifier = localStorage.getItem('userIdentifier');
             if (!userIdentifier) {
@@ -322,17 +418,14 @@
             
             const messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [] };
             let messageList = [];
-            let messageContainer = null;
             
             if (type === 'yaku') {
                 if (!messages.yaku[yaku]) {
                     return null;
                 }
                 messageList = messages.yaku[yaku];
-                messageContainer = messages.yaku[yaku];
             } else if (type === 'admin') {
                 messageList = messages.admin;
-                messageContainer = messages.admin;
             }
             
             const targetMessage = messageList.find(msg => msg.id === messageId);
@@ -360,8 +453,65 @@
             return reply;
         }
         
-        // 加载留言列表
-        function loadMessages(type, yaku = null) {
+        // 从后端加载留言列表 - 优先使用GitHub Issues API，然后是本地后端，最后回退到localStorage
+        async function loadMessages(type, yaku = null) {
+            // 确保admin类型有默认的yaku值
+            const yakuValue = type === 'admin' ? 'admin' : yaku;
+            
+            // 1. 尝试使用GitHub Issues API
+            try {
+                const messages = await loadMessagesFromGitHub(type, yakuValue);
+                console.log('从GitHub Issues加载留言成功');
+                return messages;
+            } catch (githubError) {
+                console.error('GitHub Issues API加载失败:', githubError);
+                
+                // 2. 尝试使用本地后端API
+                try {
+                    let url = '';
+                    if (type === 'yaku' && yaku) {
+                        url = `http://localhost:3000/api/messages/${type}/${yakuValue}`;
+                    } else if (type === 'admin') {
+                        url = `http://localhost:3000/api/messages/${type}/${yakuValue}`;
+                    } else {
+                        url = 'http://localhost:3000/api/messages';
+                    }
+                    
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('获取留言失败');
+                    }
+                    
+                    const messages = await response.json();
+                    
+                    // 转换日期格式以便前端显示
+                    const formattedMessages = messages.map(message => {
+                        return {
+                            ...message,
+                            id: message._id, // 使用MongoDB生成的ID
+                            date: new Date(message.timestamp).toLocaleString('zh-CN'),
+                            replies: message.replies.map(reply => ({
+                                ...reply,
+                                date: new Date(reply.timestamp).toLocaleString('zh-CN')
+                            }))
+                        };
+                    });
+                    
+                    console.log('从本地后端加载留言成功');
+                    return formattedMessages;
+                } catch (backendError) {
+                    console.error('本地后端加载失败:', backendError);
+                    
+                    // 3. 回退到localStorage
+                    console.log('从localStorage加载留言');
+                    return loadMessagesFromLocalStorage(type, yaku);
+                }
+            }
+        }
+        
+        // 本地存储作为后备方案
+        function loadMessagesFromLocalStorage(type, yaku = null) {
             const messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [] };
             let messageList = [];
             
@@ -465,9 +615,83 @@
             document.body.appendChild(modalBackdrop);
         }
 
-        function deleteMessage(type, yaku, messageId) {
+        // 删除留言
+        async function deleteMessage(type, yaku, messageId) {
+            try {
+                // 先获取留言数据以进行权限验证
+                const messages = await loadMessages(type, yaku);
+                const targetMessage = messages.find(msg => msg.id === messageId);
+                
+                if (!targetMessage) {
+                    alert('未找到要删除的留言');
+                    return;
+                }
+                
+                // 4. 权限验证
+                const currentUserIdentifier = localStorage.getItem('userIdentifier');
+                const isOwnMessage = targetMessage.userIdentifier === currentUserIdentifier;
+                
+                let canDelete = false;
+                
+                if (isOwnMessage) {
+                    canDelete = true;
+                } else {
+                    const password = prompt('请输入管理员密码以删除他人留言：');
+                    if (password === '1351') {
+                        canDelete = true;
+                    } else {
+                        alert('密码错误，无法删除他人留言');
+                        return;
+                    }
+                }
+                
+                // 5. 显示确认对话框 - 确保二次确认
+                if (canDelete) {
+                    const confirmText = `确定要删除这条留言吗？\n\n${targetMessage.content.substring(0, 20)}${targetMessage.content.length > 20 ? '...' : ''}`;
+                    
+                    // 6. 只有用户确认后，才执行删除操作
+                    showConfirmDialog(confirmText, async () => {
+                        try {
+                            // 调用后端API删除留言
+                            const response = await fetch(`http://localhost:3000/api/messages/${messageId}`, {
+                                method: 'DELETE'
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error('删除留言失败');
+                            }
+                            
+                            // 重新渲染留言列表
+                            const containerId = type === 'yaku' ? 'yaku-messages' : 'admin-messages';
+                            const sortBy = type === 'yaku' ? document.getElementById('yaku-sort')?.value : document.getElementById('admin-sort')?.value;
+                            renderMessages(type, containerId, yaku, sortBy);
+                            
+                            // 显示成功提示
+                            alert('留言已删除');
+                        } catch (error) {
+                            console.error('删除留言时出错:', error);
+                            alert('删除留言失败，请确保后端服务正在运行');
+                            
+                            // 失败时回退到localStorage
+                            deleteMessageFromLocalStorage(type, yaku, messageId, targetMessage, messages);
+                        }
+                    }, () => {
+                        // 用户取消删除，不执行任何操作
+                        console.log('用户取消了删除操作');
+                    });
+                }
+            } catch (error) {
+                console.error('删除留言时出错:', error);
+                alert('操作失败，请稍后重试');
+            }
+        }
+        
+        // 本地存储作为后备方案
+        function deleteMessageFromLocalStorage(type, yaku, messageId, targetMessage, messages) {
             // 1. 获取当前的留言数据
-            const messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [] };
+            if (!messages) {
+                messages = JSON.parse(localStorage.getItem('messages')) || { yaku: {}, admin: [] };
+            }
             
             // 2. 确定留言列表
             let messageList;
@@ -491,69 +715,48 @@
                 return;
             }
             
-            const targetMessage = messageList[messageIndex];
+            // 删除留言
+            messageList.splice(messageIndex, 1);
             
-            // 4. 权限验证
-            const currentUserIdentifier = localStorage.getItem('userIdentifier');
-            const isOwnMessage = targetMessage.userIdentifier === currentUserIdentifier;
+            // 保存更新后的数据
+            localStorage.setItem('messages', JSON.stringify(messages));
             
-            let canDelete = false;
+            // 重新渲染留言列表
+            const containerId = type === 'yaku' ? 'yaku-messages' : 'admin-messages';
+            const sortBy = type === 'yaku' ? document.getElementById('yaku-sort')?.value : document.getElementById('admin-sort')?.value;
+            renderMessages(type, containerId, yaku, sortBy);
             
-            if (isOwnMessage) {
-                canDelete = true;
-            } else {
-                const password = prompt('请输入管理员密码以删除他人留言：');
-                if (password === '1351') {
-                    canDelete = true;
-                } else {
-                    alert('密码错误，无法删除他人留言');
-                    return;
-                }
-            }
-            
-            // 5. 显示确认对话框 - 确保二次确认
-            if (canDelete) {
-                const confirmText = `确定要删除这条留言吗？\n\n${targetMessage.content.substring(0, 20)}${targetMessage.content.length > 20 ? '...' : ''}`;
-                
-                // 6. 只有用户确认后，才执行删除操作
-                showConfirmDialog(confirmText, () => {
-                    // 用户确认删除
-                    // 删除留言
-                    messageList.splice(messageIndex, 1);
-                    
-                    // 保存更新后的数据
-                    localStorage.setItem('messages', JSON.stringify(messages));
-                    
-                    // 重新渲染留言列表
-                    const containerId = type === 'yaku' ? 'yaku-messages' : 'admin-messages';
-                    const sortBy = type === 'yaku' ? document.getElementById('yaku-sort')?.value : document.getElementById('admin-sort')?.value;
-                    renderMessages(type, containerId, yaku, sortBy);
-                    
-                    // 显示成功提示
-                    alert('留言已删除');
-                }, () => {
-                    // 用户取消删除，不执行任何操作
-                    console.log('用户取消了删除操作');
-                });
-            }
+            // 显示成功提示
+            alert('留言已删除');
         }
         
         // 渲染留言列表
-        function renderMessages(type, containerId, yaku = null, sortBy = 'time') {
+        async function renderMessages(type, containerId, yaku = null, sortBy = 'time') {
             const container = document.getElementById(containerId);
-            let messages = loadMessages(type, yaku);
+            const loadingIndicator = document.getElementById(`${containerId.replace('-messages', '')}-loading-indicator`);
             
-            // 排序留言
-            if (sortBy === 'likes') {
-                messages.sort((a, b) => b.likes - a.likes);
+            // 显示加载状态
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
             } else {
-                messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                container.innerHTML = '<p class="text-gray-500 text-center py-8"><i class="fa fa-spinner fa-spin mr-2"></i>正在加载留言...</p>';
             }
             
-            if (messages.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-8">暂无留言</p>';
-                return;
-            }
+            try {
+                // 加载留言
+                let messages = await loadMessages(type, yaku);
+                
+                // 排序留言
+                if (sortBy === 'likes') {
+                    messages.sort((a, b) => b.likes - a.likes);
+                } else {
+                    messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                }
+                
+                if (messages.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">暂无留言</p>';
+                    return;
+                }
             
             // 获取用户点赞记录
             const userLikes = JSON.parse(localStorage.getItem('userLikes')) || [];
@@ -626,6 +829,11 @@
             }).join('');
             
             // 渲染完成后，确保全局事件监听器能够处理删除按钮点击
+        } finally {
+            // 隐藏加载状态
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
         }
         
         // 切换回复表单显示/隐藏
@@ -1037,10 +1245,13 @@
             });
             
             // 役种留言提交
-            document.getElementById('yaku-submit').addEventListener('click', function() {
+            document.getElementById('yaku-submit').addEventListener('click', async function() {
                 const yakuSelect = document.getElementById('yaku-select');
                 const messageInput = document.getElementById('yaku-message');
                 const nicknameInput = document.getElementById('yaku-nickname');
+                const submitBtn = this;
+                const loadingIcon = document.getElementById('yaku-loading');
+                
                 const yaku = yakuSelect.value;
                 const content = messageInput.value.trim();
                 const nickname = nicknameInput.value.trim() || '匿名用户';
@@ -1055,23 +1266,39 @@
                     return;
                 }
                 
-                // 保存留言
-                saveMessage('yaku', yaku, content, nickname);
+                // 显示加载状态
+                submitBtn.disabled = true;
+                loadingIcon.classList.remove('hidden');
                 
-                // 渲染更新后的留言列表
-                const sortBy = document.getElementById('yaku-sort')?.value || 'time';
-                renderMessages('yaku', 'yaku-messages', yaku, sortBy);
-                
-                // 清空输入框
-                messageInput.value = '';
-                
-                alert('留言提交成功！');
+                try {
+                    // 保存留言
+                    await saveMessage('yaku', yaku, content, nickname);
+                    
+                    // 渲染更新后的留言列表
+                    const sortBy = document.getElementById('yaku-sort')?.value || 'time';
+                    renderMessages('yaku', 'yaku-messages', yaku, sortBy);
+                    
+                    // 清空输入框
+                    messageInput.value = '';
+                    
+                    alert('留言提交成功！');
+                } catch (error) {
+                    console.error('提交留言失败:', error);
+                    alert('留言提交失败，请稍后重试');
+                } finally {
+                    // 隐藏加载状态
+                    submitBtn.disabled = false;
+                    loadingIcon.classList.add('hidden');
+                }
             });
             
             // 管理员留言提交
-            document.getElementById('admin-submit').addEventListener('click', function() {
+            document.getElementById('admin-submit').addEventListener('click', async function() {
                 const messageInput = document.getElementById('admin-message');
                 const nicknameInput = document.getElementById('admin-nickname');
+                const submitBtn = this;
+                const loadingIcon = document.getElementById('admin-loading');
+                
                 const content = messageInput.value.trim();
                 const nickname = nicknameInput.value.trim() || '匿名用户';
                 
@@ -1080,17 +1307,30 @@
                     return;
                 }
                 
-                // 保存留言
-                saveMessage('admin', null, content, nickname);
+                // 显示加载状态
+                submitBtn.disabled = true;
+                loadingIcon.classList.remove('hidden');
                 
-                // 渲染更新后的留言列表
-                const sortBy = document.getElementById('admin-sort')?.value || 'time';
-                renderMessages('admin', 'admin-messages', null, sortBy);
-                
-                // 清空输入框
-                messageInput.value = '';
-                
-                alert('建议提交成功！');
+                try {
+                    // 保存留言
+                    await saveMessage('admin', null, content, nickname);
+                    
+                    // 渲染更新后的留言列表
+                    const sortBy = document.getElementById('admin-sort')?.value || 'time';
+                    renderMessages('admin', 'admin-messages', null, sortBy);
+                    
+                    // 清空输入框
+                    messageInput.value = '';
+                    
+                    alert('建议提交成功！');
+                } catch (error) {
+                    console.error('提交建议失败:', error);
+                    alert('建议提交失败，请稍后重试');
+                } finally {
+                    // 隐藏加载状态
+                    submitBtn.disabled = false;
+                    loadingIcon.classList.add('hidden');
+                }
             });
             
             // 排序方式变化时重新渲染留言
