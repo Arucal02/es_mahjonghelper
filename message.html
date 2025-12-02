@@ -15,7 +15,7 @@
     <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
 
     <!-- 引入数据文件 -->
-    <script src="data.js"></script>
+     <script src="data.js"></script>
     
     <style>
         /* Valine评论区样式匹配原有界面风格 */
@@ -367,6 +367,7 @@
                 listEl: '#valine-list', // 评论列表渲染到这个容器
                 appId: 'gJAk7AcbrcALUk9fsYOGkPAB-MdYXbMMI',
                 appKey: 'q9o17nWpwLLUl1RpNF421vHD',
+                serverURLs: 'https://us-api.leancloud.app', // 设置正确的LeanCloud服务器地址
                 placeholder: `请输入对「${yakuName}」的看法...`,
                 path: `/yaku/${yakuName}`, // 按役种区分评论
                 recordIP: true,
@@ -419,6 +420,7 @@
             el: '#valine-admin-comments',
             appId: 'gJAk7AcbrcALUk9fsYOGkPAB-MdYXbMMI',
             appKey: 'q9o17nWpwLLUl1RpNF421vHD',
+            serverURLs: 'https://us-api.leancloud.app', // 设置正确的LeanCloud服务器地址
             placeholder: '留下你对网站的建议或反馈...',
             path: '/message.html?admin',
             recordIP: true,
