@@ -10,11 +10,41 @@ const GITHUB_CONFIG = {
 };
 
 // 将留言数据转换为 GitHub Issue 格式
+// 清理和验证标签名称，确保符合GitHub的标签限制
+function sanitizeLabel(label) {
+    // 移除开头和结尾的空格
+    let sanitized = label.trim();
+    
+    // 替换不符合GitHub标签规定的字符
+    // GitHub标签只能包含字母、数字、空格、加号、减号、下划线和点
+    sanitized = sanitized.replace(/[^a-zA-Z0-9\s+\-_.]/g, '-');
+    
+    // 标签名不能超过50个字符
+    if (sanitized.length > 50) {
+        sanitized = sanitized.substring(0, 50);
+    }
+    
+    return sanitized;
+}
+
 function messageToIssue(message, type, yaku) {
+    // 为不同类型的留言设置合适的标签格式
+    let label;
+    if (type === 'admin') {
+        // 管理员留言使用简洁的标签
+        label = 'admin-message';
+    } else {
+        // 役种留言使用类型-役种的标签格式
+        label = `${type}-${yaku || 'general'}`;
+    }
+    
+    // 清理标签，确保符合GitHub的限制
+    label = sanitizeLabel(label);
+    
     return {
-        title: `[${type}] ${yaku} - ${message.nickname}的留言`,
-        body: `# ${type} 类型 - ${yaku}\n\n**昵称:** ${message.nickname}\n**时间:** ${new Date(message.timestamp).toLocaleString('zh-CN')}\n\n## 留言内容\n${message.content}`,
-        labels: [`${type}-${yaku}`, 'message']
+        title: `[${type}] ${yaku || '通用'} - ${message.nickname}的留言`,
+        body: `# ${type} 类型 - ${yaku || '通用'}\n\n**昵称:** ${message.nickname}\n**时间:** ${new Date(message.timestamp).toLocaleString('zh-CN')}\n\n## 留言内容\n${message.content}`,
+        labels: [label, 'message']
     };
 }
 
@@ -101,7 +131,18 @@ async function loadMessagesFromGitHub(type, yaku) {
         
         // 构建查询参数
         const params = new URLSearchParams();
-        params.append('labels', `message,${type}-${yaku}`);
+        
+        // 根据类型设置不同的标签格式
+        let typeLabel;
+        if (type === 'admin') {
+            // 管理员留言使用admin-message标签
+            typeLabel = 'admin-message';
+        } else {
+            // 役种留言使用yaku-役种的标签格式
+            typeLabel = `${type}-${yaku || 'general'}`;
+        }
+        
+        params.append('labels', `message,${typeLabel}`);
         params.append('state', 'open');
         params.append('sort', 'created');
         params.append('direction', 'desc');
