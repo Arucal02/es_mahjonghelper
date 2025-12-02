@@ -13,23 +13,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css">
     <!-- 引入数据文件 -->
     <script src="data.js"></script>
-    <!-- Giscus 评论系统 -->
-    <script src="https://giscus.app/client.js"
-         data-repo="Arucal02/es_mahjonghelper"
-         data-repo-id="R_kgDOQXVgkA"
-         data-category="Comment"
-         data-category-id="DIC_kwDOQXVgkM4CzTnw"
-         data-mapping="pathname"
-         data-strict="0"
-         data-reactions-enabled="1"
-         data-emit-metadata="0"
-         data-input-position="top"
-         data-theme="preferred_color_scheme"
-         data-lang="zh-CN"
-         data-loading="lazy"
-         crossorigin="anonymous"
-         async>
-    </script>
     
     <script>
         tailwind.config = {
@@ -307,34 +290,56 @@
                 adminGiscusContainer.innerHTML = '<div class="text-center py-8"><i class="fa fa-spinner fa-spin text-primary text-2xl"></i></div>';
             }
             
-            // 重新创建Giscus脚本
-            const existingScript = document.querySelector('script[src="https://giscus.app/client.js"]');
-            if (existingScript) {
-                existingScript.remove();
+            // 移除所有现有的Giscus脚本
+            const existingScripts = document.querySelectorAll('script[src="https://giscus.app/client.js"]');
+            existingScripts.forEach(script => script.remove());
+            
+            // 1. 创建役种留言区的Giscus脚本
+            if (giscusContainer) {
+                const yakuScript = document.createElement('script');
+                yakuScript.src = 'https://giscus.app/client.js';
+                yakuScript.setAttribute('data-repo', 'Arucal02/es_mahjonghelper');
+                yakuScript.setAttribute('data-repo-id', 'R_kgDOQXVgkA');
+                yakuScript.setAttribute('data-category', 'Comment');
+                yakuScript.setAttribute('data-category-id', 'DIC_kwDOQXVgkM4CzTnw');
+                yakuScript.setAttribute('data-mapping', 'pathname'); // 使用路径名作为映射
+                yakuScript.setAttribute('data-strict', '0');
+                yakuScript.setAttribute('data-reactions-enabled', '1');
+                yakuScript.setAttribute('data-emit-metadata', '0');
+                yakuScript.setAttribute('data-input-position', 'top');
+                yakuScript.setAttribute('data-theme', 'preferred_color_scheme');
+                yakuScript.setAttribute('data-lang', 'zh-CN');
+                yakuScript.setAttribute('data-loading', 'lazy');
+                yakuScript.setAttribute('crossorigin', 'anonymous');
+                yakuScript.setAttribute('async', '');
+                
+                // 将脚本添加到役种留言区容器
+                giscusContainer.appendChild(yakuScript);
             }
             
-            // 获取当前URL路径（包含查询参数）
-            const currentPath = window.location.pathname + window.location.search;
-            
-            // 创建新的Giscus脚本
-            const newScript = document.createElement('script');
-            newScript.src = 'https://giscus.app/client.js';
-            newScript.setAttribute('data-repo', 'Arucal02/es_mahjonghelper');
-            newScript.setAttribute('data-repo-id', 'R_kgDOQXVgkA');
-            newScript.setAttribute('data-category', 'Comment');
-            newScript.setAttribute('data-category-id', 'DIC_kwDOQXVgkM4CzTnw');
-            newScript.setAttribute('data-mapping', 'pathname'); // 使用路径名作为映射
-            newScript.setAttribute('data-strict', '0');
-            newScript.setAttribute('data-reactions-enabled', '1');
-            newScript.setAttribute('data-emit-metadata', '0');
-            newScript.setAttribute('data-input-position', 'top');
-            newScript.setAttribute('data-theme', 'preferred_color_scheme');
-            newScript.setAttribute('data-lang', 'zh-CN');
-            newScript.setAttribute('data-loading', 'lazy');
-            newScript.setAttribute('crossorigin', 'anonymous');
-            newScript.setAttribute('async', '');
-            
-            document.head.appendChild(newScript);
+            // 2. 创建给站长留言区的Giscus脚本
+            if (adminGiscusContainer) {
+                const adminScript = document.createElement('script');
+                adminScript.src = 'https://giscus.app/client.js';
+                adminScript.setAttribute('data-repo', 'Arucal02/es_mahjonghelper');
+                adminScript.setAttribute('data-repo-id', 'R_kgDOQXVgkA');
+                adminScript.setAttribute('data-category', 'Ideas');
+                adminScript.setAttribute('data-category-id', 'DIC_kwDOQXVgkM4CzTmx');
+                adminScript.setAttribute('data-mapping', 'specific'); // 使用特定主题
+                adminScript.setAttribute('data-term', '给站长留言'); // 特定主题名称
+                adminScript.setAttribute('data-strict', '0');
+                adminScript.setAttribute('data-reactions-enabled', '1');
+                adminScript.setAttribute('data-emit-metadata', '0');
+                adminScript.setAttribute('data-input-position', 'top');
+                adminScript.setAttribute('data-theme', 'preferred_color_scheme');
+                adminScript.setAttribute('data-lang', 'zh-CN');
+                adminScript.setAttribute('data-loading', 'lazy');
+                adminScript.setAttribute('crossorigin', 'anonymous');
+                adminScript.setAttribute('async', '');
+                
+                // 将脚本添加到功能建议区容器
+                adminGiscusContainer.appendChild(adminScript);
+            }
         }
         
         // Giscus 评论系统已经集成，不需要手动实现保存留言功能
@@ -893,7 +898,10 @@
             
             // 加载役种列表用于筛选
             loadYakuList();
-            // loadPersonList(); // 人员列表功能暂时保留
+            loadPersonList(); // 加载人员列表用于役种关系网
+            
+            // 加载Giscus评论区
+            reloadGiscus();
             
             // 初始化役种筛选功能
             initYakuFilter();
