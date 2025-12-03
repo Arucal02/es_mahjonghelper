@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给站长留言 - ES麻将役种查询助手</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- Vis.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css">
+    <!-- 引入数据文件 -->
+    <script src="data.js"></script>
+    
+    <!-- 页面布局设置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7e22ce', // 紫色
+                        secondary: '#3b82f6', // 蓝色
+                        success: '#16a34a', // 绿色
+                        danger: '#dc2626', // 红色
+                        neutral: '#64748b', // 灰色
+                        dark: '#1e293b',
+                        light: '#f8fafc'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 标题区域 -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">给站长留言</h1>
+            <p class="text-gray-600">欢迎向站长提出功能建议或反馈问题</p>
+            
+            <!-- 返回按钮 -->
+            <div class="mt-4">
+                <a href="message.html" class="inline-flex items-center text-primary hover:text-primary/80 transition-colors">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    返回留言主页
+                </a>
+            </div>
+        </header>
+        
+        <!-- 给站长留言 -->
+        <div id="admin-message-section" class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="fa fa-edit mr-3 text-primary"></i>
+                功能建议与反馈
+            </h2>
+            
+            <!-- Giscus 评论区 - 功能建议 -->
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">使用 Giscus 评论系统</h3>
+                <div id="admin-giscus" class="giscus-container">
+                    <!-- Giscus 评论将自动加载到这里 -->
+                </div>
+            </div>
+            
+            <!-- 操作提示 -->
+            <div class="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                <p><i class="fa fa-info-circle mr-2"></i>请详细描述您的功能建议或问题反馈，您需要使用 GitHub 账号登录后才能留言。</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-white py-4 px-4 border-t border-gray-200">
+        <div class="container mx-auto max-w-5xl text-center text-gray-600 text-sm">
+            <p>ES麻将役种查询助手 © 2025</p>
+            <p>想一起参与到站内建设可联系：aruai@foxmail.com</p>
+        </div>
+    </footer>
+    
+    <script>
+        // 重新加载Giscus评论区（仅给站长留言部分）
+        function reloadGiscus() {
+            const adminGiscusContainer = document.getElementById('admin-giscus');
+            
+            // 清空现有内容
+            if (adminGiscusContainer) {
+                adminGiscusContainer.innerHTML = '<div class="text-center py-8"><i class="fa fa-spinner fa-spin text-primary text-2xl"></i></div>';
+            }
+            
+            // 移除所有现有的Giscus脚本
+            const existingScripts = document.querySelectorAll('script[src="https://giscus.app/client.js"]');
+            existingScripts.forEach(script => script.remove());
+            
+            // 创建给站长留言区的Giscus脚本
+            if (adminGiscusContainer) {
+                const adminScript = document.createElement('script');
+                adminScript.src = 'https://giscus.app/client.js';
+                adminScript.setAttribute('data-repo', 'Arucal02/es_mahjonghelper');
+                adminScript.setAttribute('data-repo-id', 'R_kgDOQXVgkA');
+                adminScript.setAttribute('data-category', 'Ideas');
+                adminScript.setAttribute('data-category-id', 'DIC_kwDOQXVgkM4CzTmx');
+                adminScript.setAttribute('data-mapping', 'specific'); // 使用特定主题
+                adminScript.setAttribute('data-term', 'adminScript'); // 特定主题名称
+                adminScript.setAttribute('data-strict', '0');
+                adminScript.setAttribute('data-reactions-enabled', '1');
+                adminScript.setAttribute('data-emit-metadata', '0');
+                adminScript.setAttribute('data-input-position', 'top');
+                adminScript.setAttribute('data-theme', 'preferred_color_scheme');
+                adminScript.setAttribute('data-lang', 'zh-CN');
+                adminScript.setAttribute('data-loading', 'lazy');
+                adminScript.setAttribute('crossorigin', 'anonymous');
+                adminScript.setAttribute('async', '');
+                
+                // 添加脚本加载失败监听
+                adminScript.addEventListener('error', () => {
+                    adminGiscusContainer.innerHTML = '评论区加载失败，请刷新页面重试';
+                });
+                
+                // 将脚本添加到功能建议区容器
+                adminGiscusContainer.appendChild(adminScript);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载Giscus评论区
+            reloadGiscus();
+        });
+    </script>
+</body>
+</html>
