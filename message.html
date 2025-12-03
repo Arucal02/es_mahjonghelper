@@ -81,6 +81,28 @@
             }
         }
     </style>
+    
+    <!-- 隐藏Giscus加载动画 -->
+    <style>
+        /* 隐藏Giscus的加载动画 */
+        [data-giscus-widget] iframe {
+            opacity: 1 !important;
+        }
+        
+        /* 隐藏可能的紫色点状加载动画 */
+        .giscus {
+            opacity: 1 !important;
+        }
+        
+        /* 隐藏所有紫色点状加载动画 */
+        .loading-dots,
+        .dots-loading,
+        .animate-dots,
+        .spinner-dots,
+        .dot-flashing {
+            display: none !important;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-5xl">
@@ -149,8 +171,8 @@
             <div class="mb-6">
                 <label for="yaku-select" class="block text-gray-700 font-medium mb-2">选择役种：</label>
                 <select id="yaku-select" class="w-full px-4 py-2 bg-white/80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">请选择役种</option>
-                    <!-- 这里会通过JavaScript动态加载役种列表 -->
+                      <option value="">自由留言区</option>
+                      <!-- 这里会通过JavaScript动态加载役种列表 -->
                 </select>
             </div>
             
@@ -221,7 +243,7 @@
             if (!yakuSelect) return;
             
             // 清空现有的选项
-            yakuSelect.innerHTML = '<option value="">请选择役种（空表示显示所有留言）</option>';
+            yakuSelect.innerHTML = '<option value="">自由留言区</option>';
             
             // 从data.js中提取役种名称并去重
             const yakuNames = [...new Set(esMahjongData.map(item => item.name))].sort();
@@ -254,11 +276,14 @@
             yakuSelect.addEventListener('change', function() {
                 const selectedYaku = this.value;
                 const url = new URL(window.location.href);
+                const emptyHint = document.getElementById('yaku-empty-hint');
                 
                 if (selectedYaku) {
                     url.searchParams.set('yaku', selectedYaku);
+                    if (emptyHint) emptyHint.classList.add('hidden');
                 } else {
                     url.searchParams.delete('yaku');
+                    if (emptyHint) emptyHint.classList.remove('hidden');
                 }
                 
                 // 重新加载Giscus评论区，使用新的役种值
@@ -266,9 +291,6 @@
                 
                 // 更新URL而不刷新页面
                 window.history.pushState({path: url.href}, '', url.href);
-                
-                // 重新加载Giscus评论区
-                reloadGiscus();
             });
         }
         
@@ -278,7 +300,7 @@
             
             // 清空现有内容
             if (giscusContainer) {
-                giscusContainer.innerHTML = '<div class="text-center py-8"><i class="fa fa-spinner fa-spin text-primary text-2xl"></i></div>';
+                giscusContainer.innerHTML = '';
             }
             
             // 移除所有现有的Giscus脚本
@@ -291,27 +313,66 @@
                 const yakuSelect = document.getElementById('yaku-select');
                 const currentYaku = yakuSelect ? yakuSelect.value : '';
                 
+                // 更新空选提示状态
+                const emptyHint = document.getElementById('yaku-empty-hint');
+                if (emptyHint) {
+                    if (!currentYaku) {
+                        emptyHint.classList.remove('hidden');
+                        // 空选时显示评论区（自由留言区）
+                        giscusContainer.style.display = 'block';
+                    } else {
+                        emptyHint.classList.add('hidden');
+                        // 选择役种时显示评论区
+                        giscusContainer.style.display = 'block';
+                    }
+                }
+                
+                // 设置容器样式确保评论区能完整显示
+                giscusContainer.style.minHeight = '600px';
+                giscusContainer.style.height = 'auto';
+                giscusContainer.style.overflow = 'auto';
+                
                 const yakuScript = document.createElement('script');
                 yakuScript.src = 'https://giscus.app/client.js';
                 yakuScript.setAttribute('data-repo', 'Arucal02/es_mahjonghelper');
                 yakuScript.setAttribute('data-repo-id', 'R_kgDOQXVgkA');
                 yakuScript.setAttribute('data-category', 'Comment');
                 yakuScript.setAttribute('data-category-id', 'DIC_kwDOQXVgkM4CzTnw');
-                yakuScript.setAttribute('data-mapping', 'specific'); // 使用特定主题映射
-                yakuScript.setAttribute('data-term', currentYaku || '所有役种'); // 设置当前役种为主题，为空则使用"所有役种"
-                yakuScript.setAttribute('data-strict', '0');
+                
+                if (!currentYaku) {
+                    // 空选时使用一个固定的讨论主题来显示所有评论
+                    // 在GitHub Discussions中创建一个名为"all-comments"的讨论主题
+                    yakuScript.setAttribute('data-mapping', 'specific');
+                    yakuScript.setAttribute('data-term', 'all-comments');
+                    yakuScript.setAttribute('data-strict', '0'); // 宽松模式，允许加载所有相关评论
+                } else {
+                    // 选择特定役种时使用specific映射
+                    yakuScript.setAttribute('data-mapping', 'specific');
+                    yakuScript.setAttribute('data-term', currentYaku);
+                    yakuScript.setAttribute('data-strict', '1'); // 严格模式，只加载特定主题的评论
+                }
+                
                 yakuScript.setAttribute('data-reactions-enabled', '1');
                 yakuScript.setAttribute('data-emit-metadata', '0');
                 yakuScript.setAttribute('data-input-position', 'top');
                 yakuScript.setAttribute('data-theme', 'preferred_color_scheme');
                 yakuScript.setAttribute('data-lang', 'zh-CN');
-                yakuScript.setAttribute('data-loading', 'lazy');
+                yakuScript.setAttribute('data-loading', 'eager'); // 立即加载
                 yakuScript.setAttribute('crossorigin', 'anonymous');
                 yakuScript.setAttribute('async', '');
                 
                 // 添加脚本加载失败监听
                 yakuScript.addEventListener('error', () => {
                     giscusContainer.innerHTML = '评论区加载失败，请刷新页面重试';
+                });
+                
+                // 添加全局错误处理，防止Chrome错误页面的源映射问题
+                window.addEventListener('error', (e) => {
+                    // 忽略Chrome错误页面的源映射错误
+                    if (e.filename && e.filename.startsWith('chrome-error:')) {
+                        e.preventDefault();
+                        return false;
+                    }
                 });
                 
                 // 将脚本添加到役种留言区容器
@@ -943,10 +1004,8 @@
                     const content = messageInput.value.trim();
                     const nickname = nicknameInput.value.trim() || '匿名用户';
                     
-                    if (!yaku) {
-                        alert('请先选择役种');
-                        return;
-                    }
+                    // 空选时使用"所有役种"作为役种标识
+                    const messageYaku = yaku || '所有役种';
                     
                     if (!content) {
                         alert('请输入留言内容');
@@ -959,14 +1018,14 @@
                     
                     try {
                         // 保存留言
-                        console.log('准备保存留言:', { type: 'yaku', yaku, content, nickname });
-                        const savedMessage = await saveMessage('yaku', yaku, content, nickname);
+                        console.log('准备保存留言:', { type: 'yaku', yaku: messageYaku, content, nickname });
+                        const savedMessage = await saveMessage('yaku', messageYaku, content, nickname);
                         console.log('留言保存成功:', savedMessage);
                         
                         // 渲染更新后的留言列表
                         const sortBy = document.getElementById('yaku-sort')?.value || 'time';
-                        console.log('准备渲染留言列表:', { type: 'yaku', containerId: 'yaku-messages', yaku, sortBy });
-                        renderMessages('yaku', 'yaku-messages', yaku, sortBy);
+                        console.log('准备渲染留言列表:', { type: 'yaku', containerId: 'yaku-messages', yaku: messageYaku, sortBy });
+                        renderMessages('yaku', 'yaku-messages', messageYaku, sortBy);
                         
                         // 清空输入框
                         messageInput.value = '';

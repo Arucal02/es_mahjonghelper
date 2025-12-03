@@ -68,6 +68,28 @@
             }
         }
     </style>
+    
+    <!-- 隐藏Giscus加载动画 -->
+    <style>
+        /* 隐藏Giscus的加载动画 */
+        [data-giscus-widget] iframe {
+            opacity: 1 !important;
+        }
+        
+        /* 隐藏可能的紫色点状加载动画 */
+        .giscus {
+            opacity: 1 !important;
+        }
+        
+        /* 隐藏所有紫色点状加载动画 */
+        .loading-dots,
+        .dots-loading,
+        .animate-dots,
+        .spinner-dots,
+        .dot-flashing {
+            display: none !important;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-5xl">
@@ -94,7 +116,6 @@
             
             <!-- Giscus 评论区 - 功能建议 -->
             <div class="mt-8">
-                <h3 class="text-xl font-semibold text-gray-700 mb-4">使用 Giscus 评论系统</h3>
                 <div id="admin-giscus" class="giscus-container">
                     <!-- Giscus 评论将自动加载到这里 -->
                 </div>
@@ -122,7 +143,7 @@
             
             // 清空现有内容
             if (adminGiscusContainer) {
-                adminGiscusContainer.innerHTML = '<div class="text-center py-8"><i class="fa fa-spinner fa-spin text-primary text-2xl"></i></div>';
+                adminGiscusContainer.innerHTML = '';
             }
             
             // 移除所有现有的Giscus脚本
