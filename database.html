@@ -89,9 +89,10 @@
     
     <!-- 统计区域 -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <!-- 胡牌次数统计 -->
+        <!-- 胡牌次数和上次得分统计 -->
         <div class="bg-white rounded-lg shadow-sm p-3">
-            <div class="flex items-center justify-between">
+            <!-- 总胡牌次数 -->
+            <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="text-sm font-semibold text-gray-700 mb-0.5">总胡牌次数</h3>
                     <p class="text-2xl font-bold text-primary" id="total-wins">0</p>
@@ -99,6 +100,24 @@
                 <div class="bg-primary/10 text-primary p-2 rounded-full">
                     <i class="fa fa-trophy text-lg"></i>
                 </div>
+            </div>
+            
+            <!-- 上次胡牌得分 -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-0.5">上次胡牌得分</h3>
+                    <p class="text-2xl font-bold text-primary" id="last-win-score">0</p>
+                </div>
+                <div class="bg-primary/10 text-primary p-2 rounded-full">
+                    <i class="fa fa-star text-lg"></i>
+                </div>
+            </div>
+            
+            <!-- 重置统计数据按钮 -->
+            <div class="mt-4">
+                <button id="reset-statistics" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-medium py-1.5 px-3 rounded transition-colors">
+                    <i class="fa fa-refresh mr-1"></i> 重置统计数据
+                </button>
             </div>
         </div>
         
@@ -1449,6 +1468,17 @@ function exportCSV() {
       const totalWinsElement = document.getElementById('total-wins');
       totalWinsElement.textContent = winningData.totalWins;
       
+      // 显示上次胡牌得分
+      const lastWinScoreElement = document.getElementById('last-win-score');
+      if (winningData.allWins.length > 0) {
+        // 按照时间戳排序，获取最新的胡牌记录
+        const latestWin = [...winningData.allWins]
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+        lastWinScoreElement.textContent = latestWin.totalScore;
+      } else {
+        lastWinScoreElement.textContent = '0';
+      }
+      
       // 显示最常胡的役种
       const topYakuList = document.getElementById('top-yaku-list');
       const yakuPagination = document.getElementById('yaku-pagination');
@@ -1650,10 +1680,57 @@ function exportCSV() {
       
       // 设置分页事件
       setupPaginationEvents();
+      
+      // 重置确认模态框元素
+      const resetModal = document.getElementById('reset-modal');
+      const cancelResetBtn = document.getElementById('cancel-reset');
+      const confirmResetBtn = document.getElementById('confirm-reset');
+      
+      // 添加重置统计数据按钮事件
+      const resetBtn = document.getElementById('reset-statistics');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+          // 显示确认模态框
+          resetModal.classList.remove('hidden');
+          resetModal.classList.add('flex');
+        });
+      }
+      
+      // 取消重置事件
+      if (cancelResetBtn) {
+        cancelResetBtn.addEventListener('click', function() {
+          resetModal.classList.add('hidden');
+          resetModal.classList.remove('flex');
+        });
+      }
+      
+      // 确认重置事件
+      if (confirmResetBtn) {
+        confirmResetBtn.addEventListener('click', function() {
+          localStorage.removeItem('winningStatistics');
+          showStatistics();
+          showToast('胡牌统计数据已重置');
+          // 隐藏模态框
+          resetModal.classList.add('hidden');
+          resetModal.classList.remove('flex');
+        });
+      }
     });
   </script>
   
-  <!-- 返回顶部/底部漂浮窗 -->
+  <!-- 重置确认模态框 -->
+  <div id="reset-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl p-5 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-semibold text-gray-700 mb-3">确认重置</h3>
+      <p class="text-gray-600 mb-4">确定要重置所有胡牌统计数据吗？此操作不可恢复。</p>
+      <div class="flex justify-end space-x-3">
+        <button id="cancel-reset" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded transition-colors">取消</button>
+        <button id="confirm-reset" class="px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded transition-colors">确认重置</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- 返回顶部/底部漂浮窗 -->
   <div class="fixed right-4 bottom-4 flex flex-col gap-2 z-50 opacity-20 hover:opacity-100 transition-opacity duration-300">
     <button id="scrollToTop" class="bg-primary text-white rounded-full p-3 shadow-lg hover:bg-primary/90 transition-colors duration-300">
       <i class="fas fa-arrow-up"></i>
